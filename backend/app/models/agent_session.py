@@ -11,8 +11,6 @@ from app.models.usage_log import UsageLog
 
 
 class AgentSession(Base, TimestampMixin):
-    """Agent session model representing a Claude agent conversation session."""
-
     __tablename__ = "agent_sessions"
 
     id: Mapped[uuid.UUID] = mapped_column(

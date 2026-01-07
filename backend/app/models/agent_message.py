@@ -10,8 +10,6 @@ from app.models.tool_execution import ToolExecution
 
 
 class AgentMessage(Base, TimestampMixin):
-    """Agent message model representing a single message in a conversation session."""
-
     __tablename__ = "agent_messages"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)

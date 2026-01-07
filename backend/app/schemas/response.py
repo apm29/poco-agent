@@ -1,5 +1,3 @@
-"""Unified API response schemas."""
-
 from typing import Any, Generic, TypeVar
 
 from fastapi.encoders import jsonable_encoder
@@ -16,7 +14,11 @@ class ResponseSchema(BaseModel, Generic[T]):
 
 
 class Response:
-    """Unified response builder."""
+    """Unified API response builder.
+
+    Provides static methods to build consistent JSON responses for success,
+    error, and paginated results.
+    """
 
     @staticmethod
     def _build_response(
@@ -25,7 +27,17 @@ class Response:
         data: Any,
         status_code: int,
     ) -> JSONResponse:
-        """Internal method to build JSONResponse."""
+        """Build a JSONResponse from components.
+
+        Args:
+            code: Business response code (0 for success, non-zero for errors).
+            message: Response message.
+            data: Response data payload.
+            status_code: HTTP status code.
+
+        Returns:
+            JSONResponse with the formatted response schema.
+        """
         return JSONResponse(
             status_code=status_code,
             content=jsonable_encoder(
@@ -42,7 +54,15 @@ class Response:
         data: T | None = None,
         message: str = "Success",
     ) -> JSONResponse:
-        """Build success response with code=0, status_code=200."""
+        """Build a success response.
+
+        Args:
+            data: Response data payload.
+            message: Success message.
+
+        Returns:
+            JSONResponse with code=0 and status_code=200.
+        """
         return Response._build_response(
             code=0,
             message=message,
@@ -58,7 +78,21 @@ class Response:
         page_size: int = 20,
         message: str = "Success",
     ) -> JSONResponse:
-        """Build paginated response - pagination info in data."""
+        """Build a paginated response with metadata.
+
+        The response includes pagination info (total, page, page_size,
+        total_pages, has_next, has_prev) within the data field.
+
+        Args:
+            data: List of items for the current page.
+            total: Total number of items across all pages.
+            page: Current page number (1-indexed).
+            page_size: Number of items per page.
+            message: Success message.
+
+        Returns:
+            JSONResponse with paginated data and metadata.
+        """
         total_pages = (total + page_size - 1) // page_size
 
         paginated_data = {
@@ -87,13 +121,16 @@ class Response:
         data: Any = None,
         status_code: int = 400,
     ) -> JSONResponse:
-        """Build error response.
+        """Build an error response.
 
         Args:
-            code: Business error code (e.g., 10001 for USER_NOT_FOUND)
-            message: Error message
-            data: Optional error details
-            status_code: HTTP status code, defaults to 400
+            code: Business error code (e.g., 10001 for USER_NOT_FOUND).
+            message: Error message.
+            data: Optional error details.
+            status_code: HTTP status code.
+
+        Returns:
+            JSONResponse with error information.
         """
         return Response._build_response(
             code=code,

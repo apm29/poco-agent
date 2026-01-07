@@ -2,8 +2,6 @@ from enum import Enum
 
 
 class ErrorCode(Enum):
-    """Business error codes using tuple structure (code, message)."""
-
     # General Business Errors (40000+)
     BAD_REQUEST = (40000, "Bad request")
     UNAUTHORIZED = (40100, "Unauthorized")

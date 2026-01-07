@@ -1,5 +1,3 @@
-"""Application configuration management using pydantic-settings."""
-
 from functools import lru_cache
 
 from pydantic import Field

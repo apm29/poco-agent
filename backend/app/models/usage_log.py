@@ -8,8 +8,6 @@ from app.models.agent_session import AgentSession
 
 
 class UsageLog(Base, TimestampMixin):
-    """Usage log model tracking token usage and costs for a session."""
-
     __tablename__ = "usage_logs"
 
     id: Mapped[uuid.UUID] = mapped_column(

@@ -1,5 +1,3 @@
-"""Middleware setup for the application."""
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -12,7 +10,6 @@ from app.core.settings import get_settings
 
 
 def setup_middleware(app: FastAPI) -> None:
-    """Register all middleware for the application."""
     settings = get_settings()
 
     app.add_middleware(RequestContextMiddleware)

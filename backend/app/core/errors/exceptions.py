@@ -1,13 +1,9 @@
-"""Custom application exceptions."""
-
 from typing import Any
 
 from app.core.errors.error_codes import ErrorCode
 
 
 class AppException(Exception):
-    """Base exception for all application errors."""
-
     def __init__(
         self,
         error_code: ErrorCode,

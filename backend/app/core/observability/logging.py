@@ -1,5 +1,3 @@
-"""Logging configuration with request_id / trace_id enrichment."""
-
 import logging
 
 from app.core.observability.request_context import get_request_id, get_trace_id
@@ -8,6 +6,15 @@ _installed_record_factory = False
 
 
 def configure_logging(*, debug: bool) -> None:
+    """Configure logging with request_id/trace_id enrichment.
+
+    This function sets up a custom log record factory that adds request_id and
+    trace_id to all log records. The factory is installed only once. It also
+    configures the basic logging format and level if no handlers are present.
+
+    Args:
+        debug: If True, set logging level to DEBUG; otherwise INFO.
+    """
     global _installed_record_factory
     if not _installed_record_factory:
         old_factory = logging.getLogRecordFactory()

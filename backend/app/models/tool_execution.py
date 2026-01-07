@@ -10,8 +10,6 @@ from app.models.agent_session import AgentSession
 
 
 class ToolExecution(Base, TimestampMixin):
-    """Tool execution model representing a tool call and its result."""
-
     __tablename__ = "tool_executions"
 
     id: Mapped[uuid.UUID] = mapped_column(
