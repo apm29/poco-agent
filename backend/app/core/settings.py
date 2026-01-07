@@ -18,7 +18,7 @@ class Settings(BaseSettings):
 
     database_url: str = Field(default="sqlite:///./toto.db")
 
-    cors_origins: str | list[str] = Field(
+    cors_origins: list[str] = Field(
         default=["http://localhost:3000", "http://127.0.0.1:3000"]
     )
 
@@ -35,6 +35,3 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-
-
-__all__ = ["Settings", "get_settings"]
