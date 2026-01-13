@@ -213,6 +213,20 @@ class CallbackService:
                 message="Session not found yet",
             )
 
+        # Save SDK session_id if present
+        if (
+            callback.sdk_session_id
+            and callback.sdk_session_id != db_session.sdk_session_id
+        ):
+            session_service.update_session(
+                db,
+                db_session.id,
+                SessionUpdateRequest(sdk_session_id=callback.sdk_session_id),
+            )
+            logger.info(
+                f"Updated session {db_session.id} with sdk_session_id={callback.sdk_session_id}"
+            )
+
         if callback.status in [CallbackStatus.COMPLETED, CallbackStatus.FAILED]:
             session_service.update_session(
                 db, db_session.id, SessionUpdateRequest(status=callback.status.value)
