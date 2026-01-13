@@ -12,16 +12,26 @@ class ExecutorClient:
 
     async def execute_task(
         self,
+        executor_url: str,
         session_id: str,
         prompt: str,
         callback_url: str,
         callback_token: str,
         config: dict,
     ) -> str:
-        """Call Executor to execute a task."""
+        """Call Executor to execute a task.
+
+        Args:
+            executor_url: Executor service URL
+            session_id: Session ID
+            prompt: Task prompt
+            callback_url: Callback URL
+            callback_token: Callback token
+            config: Task configuration
+        """
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"{self.executor_url}/v1/tasks/execute",
+                f"{executor_url}/v1/tasks/execute",
                 json={
                     "session_id": session_id,
                     "prompt": prompt,

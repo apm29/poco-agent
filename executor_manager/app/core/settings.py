@@ -25,6 +25,30 @@ class Settings(BaseSettings):
     retry_delay_seconds: int = Field(default=60)
     callback_token: str = Field(default="change-this-token-in-production")
 
+    anthropic_token: str = Field(default="", alias="ANTHROPIC_AUTH_TOKEN")
+    default_model: str = Field(
+        default="claude-sonnet-4-20250514", alias="DEFAULT_MODEL"
+    )
+    max_executor_containers: int = Field(default=10, alias="MAX_EXECUTOR_CONTAINERS")
+    executor_image: str = Field(
+        default="opencowork/executor:latest", alias="EXECUTOR_IMAGE"
+    )
+
+    workspace_root: str = Field(
+        default="/var/lib/opencowork/workspaces", alias="WORKSPACE_ROOT"
+    )
+    workspace_cleanup_enabled: bool = Field(
+        default=True, alias="WORKSPACE_CLEANUP_ENABLED"
+    )
+    workspace_cleanup_interval_hours: int = Field(
+        default=24, alias="WORKSPACE_CLEANUP_INTERVAL_HOURS"
+    )
+    workspace_max_age_hours: int = Field(default=24, alias="WORKSPACE_MAX_AGE_HOURS")
+    workspace_archive_enabled: bool = Field(
+        default=True, alias="WORKSPACE_ARCHIVE_ENABLED"
+    )
+    workspace_archive_days: int = Field(default=7, alias="WORKSPACE_ARCHIVE_DAYS")
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

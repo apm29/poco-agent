@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -10,6 +11,9 @@ class TaskConfig(BaseModel):
     git_branch: str = "main"
     mcp_config: dict = Field(default_factory=dict)
     skill_files: dict = Field(default_factory=dict)
+    user_id: str = ""
+    container_mode: Literal["ephemeral", "persistent"] = "ephemeral"
+    container_id: str | None = None
 
 
 class TaskCreateRequest(BaseModel):
@@ -18,7 +22,7 @@ class TaskCreateRequest(BaseModel):
     prompt: str
     config: TaskConfig
     user_id: str
-    scheduled_at: datetime | None = None  # Optional scheduled execution
+    scheduled_at: datetime | None = None
 
 
 class TaskCreateResponse(BaseModel):
@@ -26,19 +30,21 @@ class TaskCreateResponse(BaseModel):
 
     task_id: str
     session_id: str
-    status: str  # "pending" | "scheduled" | "running" | "completed" | "failed"
+    status: str
+    executor_url: str | None = None
+    container_id: str | None = None
 
 
 class TaskStatusResponse(BaseModel):
     """Task status response."""
 
     task_id: str
-    status: str  # "scheduled" | "running" | "completed" | "failed"
+    status: str
     next_run_time: str | None = None
 
 
 class SessionStatusResponse(BaseModel):
-    """Session status response (proxied from backend)."""
+    """Session status response."""
 
     session_id: str
     user_id: str
@@ -48,3 +54,26 @@ class SessionStatusResponse(BaseModel):
     status: str
     created_at: datetime
     updated_at: datetime
+
+
+class TaskCancelRequest(BaseModel):
+    """Cancel task request."""
+
+    session_id: str
+    reason: str | None = "User cancelled"
+
+
+class ContainerDeleteRequest(BaseModel):
+    """Delete container request."""
+
+    container_id: str
+    reason: str | None = "Task completed"
+
+
+class ContainerStatsResponse(BaseModel):
+    """Container statistics response."""
+
+    total_active: int
+    persistent_containers: int
+    ephemeral_containers: int
+    containers: list[dict]

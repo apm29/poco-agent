@@ -37,7 +37,7 @@ class TaskService:
             config: Task configuration dictionary
 
         Returns:
-            TaskCreateResponse with task_id and session_id
+            TaskCreateResponse with task_id, session_id, and container info
 
         Raises:
             AppException: If session creation or task scheduling fails
@@ -47,7 +47,6 @@ class TaskService:
         task_id = str(uuid.uuid4())
 
         try:
-            # Create session via backend
             backend_client = BackendClient()
             session_id = await backend_client.create_session(
                 user_id=user_id, config=config
@@ -55,7 +54,22 @@ class TaskService:
 
             logger.info(f"Created session {session_id} for task {task_id}")
 
-            # Schedule task for immediate execution
+            container_url = None
+            container_id = config.get("container_id")
+            container_mode = config.get("container_mode", "ephemeral")
+
+            if container_id or container_mode == "persistent":
+                container_pool = TaskDispatcher.get_container_pool()
+                (
+                    container_url,
+                    container_id,
+                ) = await container_pool.get_or_create_container(
+                    session_id=session_id,
+                    user_id=user_id,
+                    container_mode=container_mode,
+                    container_id=container_id,
+                )
+
             scheduler.add_job(
                 TaskDispatcher.dispatch,
                 args=[task_id, session_id, prompt, config],
@@ -66,7 +80,11 @@ class TaskService:
             logger.info(f"Task {task_id} scheduled for execution")
 
             return TaskCreateResponse(
-                task_id=task_id, session_id=session_id, status="scheduled"
+                task_id=task_id,
+                session_id=session_id,
+                status="scheduled",
+                executor_url=container_url,
+                container_id=container_id,
             )
 
         except httpx.HTTPStatusError as e:

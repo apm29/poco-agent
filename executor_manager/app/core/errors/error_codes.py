@@ -19,6 +19,17 @@ class ErrorCode(Enum):
     BACKEND_UNAVAILABLE = (30002, "Backend service unavailable")
     CALLBACK_FORWARD_FAILED = (30003, "Failed to forward callback to backend")
 
+    WORKSPACE_NOT_FOUND = (22001, "Workspace not found")
+    WORKSPACE_ARCHIVE_FAILED = (22002, "Failed to archive workspace")
+    WORKSPACE_DELETE_FAILED = (22003, "Failed to delete workspace")
+    WORKSPACE_PERSISTENT_DELETE_FORBIDDEN = (
+        22004,
+        "Cannot delete persistent workspace without force flag",
+    )
+
+    CONTAINER_START_FAILED = (31001, "Failed to start container")
+    CONTAINER_NOT_FOUND = (31002, "Container not found")
+
     INTERNAL_ERROR = (50000, "Internal server error")
 
     @property

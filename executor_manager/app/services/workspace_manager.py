@@ -1,0 +1,286 @@
+import json
+import logging
+import shutil
+import tarfile
+from dataclasses import dataclass, asdict
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Literal
+
+from app.core.settings import Settings, get_settings
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class WorkspaceMeta:
+    session_id: str
+    user_id: str
+    task_id: str
+    created_at: str
+    status: Literal["active", "archived", "deleted"]
+    container_mode: Literal["ephemeral", "persistent"]
+    workspace_path: str
+    size_bytes: int = 0
+
+    def to_dict(self) -> dict[str, str | int]:
+        return asdict(self)
+
+
+class WorkspaceManager:
+    settings: Settings
+    base_dir: Path
+    active_dir: Path
+    archive_dir: Path
+    temp_dir: Path
+
+    def __init__(self):
+        self.settings = get_settings()
+        self.base_dir = Path(self.settings.workspace_root)
+        self.active_dir = self.base_dir / "active"
+        self.archive_dir = self.base_dir / "archive"
+        self.temp_dir = self.base_dir / "temp"
+
+        self._init_directories()
+
+    def _init_directories(self) -> None:
+        """Initialize directory structure."""
+        for directory in [self.active_dir, self.archive_dir, self.temp_dir]:
+            directory.mkdir(parents=True, exist_ok=True)
+            logger.info(f"Ensured directory exists: {directory}")
+
+    def get_workspace_path(
+        self,
+        user_id: str,
+        session_id: str,
+        create: bool = True,
+    ) -> Path:
+        """Get workspace path."""
+        user_dir = self.active_dir / user_id
+        session_dir = user_dir / session_id
+
+        if create:
+            user_dir.mkdir(parents=True, exist_ok=True)
+            session_dir.mkdir(exist_ok=True)
+
+            (session_dir / "workspace").mkdir(exist_ok=True)
+            (session_dir / "logs").mkdir(exist_ok=True)
+
+            self._write_meta(session_dir, user_id, session_id)
+
+        return session_dir
+
+    def _write_meta(
+        self,
+        session_dir: Path,
+        user_id: str,
+        session_id: str,
+        task_id: str = "",
+        container_mode: Literal["ephemeral", "persistent"] = "ephemeral",
+    ) -> None:
+        """Write metadata file."""
+        meta = WorkspaceMeta(
+            session_id=session_id,
+            user_id=user_id,
+            task_id=task_id,
+            created_at=datetime.now().isoformat(),
+            status="active",
+            container_mode=container_mode,
+            workspace_path=str(session_dir / "workspace"),
+        )
+
+        meta_file = session_dir / "meta.json"
+        _ = meta_file.write_text(json.dumps(meta.to_dict(), indent=2), encoding="utf-8")
+        logger.info(f"Created meta file: {meta_file}")
+
+    def get_meta(self, user_id: str, session_id: str) -> WorkspaceMeta | None:
+        """Read metadata file."""
+        meta_file = self.active_dir / user_id / session_id / "meta.json"
+
+        if not meta_file.exists():
+            return None
+
+        try:
+            data = json.loads(meta_file.read_text(encoding="utf-8"))
+            return WorkspaceMeta(**data)
+        except Exception as e:
+            logger.error(f"Failed to read meta file {meta_file}: {e}")
+            return None
+
+    def update_meta_status(
+        self,
+        user_id: str,
+        session_id: str,
+        status: Literal["active", "archived", "deleted"],
+    ) -> None:
+        """Update metadata status."""
+        meta = self.get_meta(user_id, session_id)
+        if meta:
+            meta.status = status
+            meta_file = self.active_dir / user_id / session_id / "meta.json"
+            _ = meta_file.write_text(
+                json.dumps(meta.to_dict(), indent=2), encoding="utf-8"
+            )
+
+    def get_workspace_volume(self, user_id: str, session_id: str) -> str:
+        """Get container mount path."""
+        workspace_dir = self.get_workspace_path(user_id, session_id, create=True)
+        return str(workspace_dir / "workspace")
+
+    def archive_workspace(
+        self,
+        user_id: str,
+        session_id: str,
+        keep_days: int = 7,
+    ) -> str | None:
+        """Archive workspace."""
+        session_dir = self.active_dir / user_id / session_id
+
+        if not session_dir.exists():
+            logger.warning(f"Workspace not found: {session_dir}")
+            return None
+
+        try:
+            date_str = datetime.now().strftime("%Y-%m-%d")
+            archive_user_dir = self.archive_dir / user_id / date_str
+            archive_user_dir.mkdir(parents=True, exist_ok=True)
+
+            archive_file = archive_user_dir / f"{session_id}.tar.gz"
+
+            with tarfile.open(archive_file, "w:gz") as tar:
+                tar.add(session_dir, arcname=session_id)
+
+            self.update_meta_status(user_id, session_id, "archived")
+
+            shutil.rmtree(session_dir)
+
+            logger.info(f"Archived workspace: {session_dir} -> {archive_file}")
+            return str(archive_file)
+
+        except Exception as e:
+            logger.error(f"Failed to archive workspace {session_dir}: {e}")
+            return None
+
+    def delete_workspace(
+        self,
+        user_id: str,
+        session_id: str,
+        force: bool = False,
+    ) -> bool:
+        """Delete workspace."""
+        meta = self.get_meta(user_id, session_id)
+
+        if meta and not force and meta.container_mode == "persistent":
+            logger.warning(
+                f"Workspace {session_id} is persistent, use force=True to delete"
+            )
+            return False
+
+        session_dir = self.active_dir / user_id / session_id
+
+        if not session_dir.exists():
+            logger.warning(f"Workspace not found: {session_dir}")
+            return False
+
+        try:
+            shutil.rmtree(session_dir)
+            logger.info(f"Deleted workspace: {session_dir}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to delete workspace {session_dir}: {e}")
+            return False
+
+    def cleanup_expired_workspaces(self, max_age_hours: int = 24) -> dict[str, int]:
+        """Clean up expired workspaces."""
+        now = datetime.now()
+        cleaned = 0
+        archived = 0
+        errors = 0
+
+        for user_dir in self.active_dir.iterdir():
+            if not user_dir.is_dir():
+                continue
+
+            for session_dir in user_dir.iterdir():
+                if not session_dir.is_dir():
+                    continue
+
+                meta = self.get_meta(user_dir.name, session_dir.name)
+
+                if not meta:
+                    if self.delete_workspace(
+                        user_dir.name, session_dir.name, force=True
+                    ):
+                        cleaned += 1
+                    continue
+
+                created_at = datetime.fromisoformat(meta.created_at)
+                age = now - created_at
+
+                if meta.status == "active":
+                    if age > timedelta(hours=max_age_hours):
+                        logger.info(
+                            f"Workspace {session_dir.name} expired (age: {age})"
+                        )
+
+                        if meta.container_mode == "ephemeral":
+                            if self.delete_workspace(
+                                user_dir.name, session_dir.name, force=True
+                            ):
+                                cleaned += 1
+                        else:
+                            if self.archive_workspace(user_dir.name, session_dir.name):
+                                archived += 1
+
+        return {
+            "cleaned": cleaned,
+            "archived": archived,
+            "errors": errors,
+        }
+
+    def get_disk_usage(self) -> dict[str, float | int | str]:
+        """Get disk usage statistics."""
+        total, used, free = shutil.disk_usage(self.base_dir)
+
+        active_size = self._get_dir_size(self.active_dir)
+        archive_size = self._get_dir_size(self.archive_dir)
+        temp_size = self._get_dir_size(self.temp_dir)
+
+        return {
+            "base_dir": str(self.base_dir),
+            "total_gb": round(total / (1024**3), 2),
+            "used_gb": round(used / (1024**3), 2),
+            "free_gb": round(free / (1024**3), 2),
+            "usage_percent": round((used / total) * 100, 2),
+            "active_size_gb": round(active_size / (1024**3), 2),
+            "archive_size_gb": round(archive_size / (1024**3), 2),
+            "temp_size_gb": round(temp_size / (1024**3), 2),
+            "active_workspaces": sum(1 for _ in self.active_dir.rglob("meta.json")),
+            "archived_workspaces": sum(1 for _ in self.archive_dir.rglob("*.tar.gz")),
+        }
+
+    def _get_dir_size(self, path: Path) -> int:
+        """Get directory size."""
+        total = 0
+        for item in path.rglob("*"):
+            if item.is_file():
+                total += item.stat().st_size
+        return total
+
+    def get_user_workspaces(self, user_id: str) -> list[dict[str, str | int]]:
+        """Get all workspaces for a user."""
+        user_dir = self.active_dir / user_id
+
+        if not user_dir.exists():
+            return []
+
+        workspaces: list[dict[str, str | int]] = []
+        for session_dir in user_dir.iterdir():
+            if not session_dir.is_dir():
+                continue
+
+            meta = self.get_meta(user_id, session_dir.name)
+            if meta:
+                workspaces.append(meta.to_dict())
+
+        return workspaces
