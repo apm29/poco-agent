@@ -197,7 +197,11 @@ class RunPullService:
             logger.info(f"Dispatched run {run_id} (session={session_id})")
 
         except Exception as e:
-            logger.error(f"Failed to dispatch run {run_id} (session={session_id}): {e}")
+            logger.error(
+                f"Failed to dispatch run {run_id} (session={session_id}): "
+                f"{type(e).__name__}: {e}",
+                exc_info=True,
+            )
             try:
                 await self.backend_client.fail_run(
                     run_id=run_id, worker_id=self.worker_id, error_message=str(e)
