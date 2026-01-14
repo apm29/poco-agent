@@ -1,12 +1,17 @@
 "use client";
 
 import * as React from "react";
-import { ChatPanel } from "./left-panel/chat-panel";
-import { ArtifactsPanel } from "./center-panel/artifacts-panel";
+import { ChatPanel } from "./chat-panel/chat-panel";
+import { ArtifactsPanel } from "./file-panel/artifacts-panel";
 import { MobileExecutionView } from "./mobile-execution-view";
 import { useChat } from "@/hooks/use-chat";
 import { useT } from "@/app/i18n/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 
 interface ExecutionContainerProps {
   sessionId: string;
@@ -48,26 +53,34 @@ export function ExecutionContainer({ sessionId }: ExecutionContainerProps) {
     return <MobileExecutionView session={session} />;
   }
 
-  // Desktop two-column layout
+  // Desktop resizable layout
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* Left panel - Chat with status cards (45%) */}
-      <div className="w-[45%] min-w-0 border-r border-border flex flex-col">
-        <ChatPanel
-          session={session}
-          statePatch={session?.state_patch}
-          progress={session?.progress}
-          currentStep={session?.state_patch.current_step}
-        />
-      </div>
+      <ResizablePanelGroup direction="horizontal">
+        {/* Left panel - Chat with status cards (45%) */}
+        <ResizablePanel defaultSize={45} minSize={30}>
+          <div className="h-full flex flex-col">
+            <ChatPanel
+              session={session}
+              statePatch={session?.state_patch}
+              progress={session?.progress}
+              currentStep={session?.state_patch.current_step}
+            />
+          </div>
+        </ResizablePanel>
 
-      {/* Right panel - Artifacts (55%) */}
-      <div className="w-[55%] min-w-0 flex flex-col bg-muted/30">
-        <ArtifactsPanel
-          artifacts={session?.state_patch.artifacts}
-          sessionId={sessionId}
-        />
-      </div>
+        <ResizableHandle withHandle />
+
+        {/* Right panel - Artifacts (55%) */}
+        <ResizablePanel defaultSize={55} minSize={30}>
+          <div className="h-full flex flex-col bg-muted/30">
+            <ArtifactsPanel
+              artifacts={session?.state_patch.artifacts}
+              sessionId={sessionId}
+            />
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   );
 }

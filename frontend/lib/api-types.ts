@@ -322,3 +322,15 @@ export type Attachment = {
   size: number;
   url: string;
 };
+
+// ============ Workspace Types ============
+
+export interface FileNode {
+  id: string;
+  name: string;
+  type: "file" | "folder";
+  path: string;
+  children?: FileNode[];
+  url?: string;
+  mimeType?: string;
+}

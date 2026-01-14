@@ -17,10 +17,11 @@ import {
   PanelRightClose,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { FileSidebar, FileNode } from "./file-sidebar";
+import { FileSidebar } from "./file-sidebar";
+import type { FileNode } from "@/lib/api-types";
 import { DocumentViewer } from "./document-viewer";
 
-import { workspaceApi } from "@/lib/api/workspace";
+import { chatApi } from "@/lib/api/chat";
 
 interface ArtifactsPanelProps {
   artifacts?: Artifact[];
@@ -56,7 +57,7 @@ export function ArtifactsPanel({
   React.useEffect(() => {
     const fetchFiles = async () => {
       try {
-        const data = await workspaceApi.getFiles(sessionId);
+        const data = await chatApi.getFiles(sessionId);
         setFiles(data);
       } catch (error) {
         console.error("Failed to fetch workspace files:", error);

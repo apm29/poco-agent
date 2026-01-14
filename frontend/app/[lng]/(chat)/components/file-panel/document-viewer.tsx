@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
-import { FileNode } from "./file-browser";
+import type { FileNode } from "@/lib/api-types";
 import { File, Download, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { DocViewerProps } from "react-doc-viewer";

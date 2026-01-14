@@ -7,8 +7,8 @@ import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import { ChatPanel } from "./left-panel/chat-panel";
-import { ArtifactsPanel } from "./center-panel/artifacts-panel";
+import { ChatPanel } from "./chat-panel/chat-panel";
+import { ArtifactsPanel } from "./file-panel/artifacts-panel";
 import type { ExecutionSession } from "@/lib/api-types";
 import { useT } from "@/app/i18n/client";
 

@@ -14,6 +14,7 @@ import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { HomeHeader } from "./home-header";
 import { TaskComposer } from "./task-composer";
 import { ConnectorsBar } from "./connectors-bar";
+import { chatApi } from "@/lib/api/chat";
 
 import { SettingsDialog } from "@/components/settings/settings-dialog";
 
@@ -40,28 +41,34 @@ export function HomePage() {
     setIsSettingsOpen(true);
   }, []);
 
-  const handleSendTask = React.useCallback(() => {
+  const handleSendTask = React.useCallback(async () => {
     if (!inputValue.trim()) return;
 
-    // 1. Create a session ID
-    const sessionId = Date.now().toString();
+    console.log("[Home] Sending task:", inputValue);
 
-    // 2. Save prompt to localStorage for the chat session to pick up
-    // Note: We need to ensure this code runs in client (which it does, inside callback)
-    localStorage.setItem(`session_prompt_${sessionId}`, inputValue);
+    try {
+      // 1. Call create session API
+      const session = await chatApi.createSession(inputValue);
+      const sessionId = session.session_id;
 
-    // 3. Add to local history (optional, helps with instant feedback if we stay on page,
-    // but we are navigating away. taskHistory in Home is local state, so it won't persist to ChatLayout
-    // unless we persist it globally. For now, we follow the pattern.)
-    addTask(inputValue, {
-      timestamp: t("mocks.timestamps.justNow"),
-      status: "running",
-    });
+      // 2. Save prompt to localStorage for compatibility/fallback
+      localStorage.setItem(`session_prompt_${sessionId}`, inputValue);
 
-    setInputValue("");
+      // 3. Add to local history (persisted via localStorage in hook)
+      addTask(inputValue, {
+        id: sessionId,
+        timestamp: t("mocks.timestamps.justNow"),
+        status: "running",
+      });
 
-    // 4. Navigate to the chat page
-    router.push(`/chat/${sessionId}`);
+      console.log("[Home] Navigating to chat session:", sessionId);
+      setInputValue("");
+
+      // 4. Navigate to the chat page
+      router.push(`/chat/${sessionId}`);
+    } catch (error) {
+      console.error("[Home] Failed to create session:", error);
+    }
   }, [addTask, inputValue, t, router]);
 
   const handleCreateProject = React.useCallback(

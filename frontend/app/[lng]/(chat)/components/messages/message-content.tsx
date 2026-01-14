@@ -37,7 +37,7 @@ export function MessageContent({ content }: { content: string }) {
           // Links
           a: ({ children, href }: LinkProps) => (
             <a
-              className="text-primary hover:underline"
+              className="text-foreground underline underline-offset-4 decoration-muted-foreground/30 hover:decoration-foreground transition-colors"
               target="_blank"
               rel="noopener noreferrer"
               href={href}

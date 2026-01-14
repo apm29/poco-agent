@@ -20,16 +20,7 @@ import {
   ChevronDown,
   PanelRightOpen,
 } from "lucide-react";
-
-export interface FileNode {
-  id: string;
-  name: string;
-  type: "file" | "folder";
-  path: string;
-  children?: FileNode[];
-  url?: string;
-  mimeType?: string;
-}
+import type { FileNode } from "@/lib/api-types";
 
 interface FileBrowserProps {
   files: FileNode[];

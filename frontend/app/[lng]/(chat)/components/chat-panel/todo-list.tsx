@@ -10,9 +10,10 @@ import type { TodoItem as TodoItemType } from "@/lib/api-types";
 interface TodoListProps {
   todos: TodoItemType[];
   progress?: number;
+  currentStep?: string;
 }
 
-export function TodoList({ todos, progress = 0 }: TodoListProps) {
+export function TodoList({ todos, progress = 0, currentStep }: TodoListProps) {
   const { t } = useT("translation");
 
   const completedCount = todos.filter(
@@ -26,7 +27,14 @@ export function TodoList({ todos, progress = 0 }: TodoListProps) {
           {/* Title with icon and count */}
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <CheckCircle2 className="size-4 text-foreground" />
-            <span className="flex-1">{t("todo.title")}</span>
+            <span className="flex-1">
+              {t("todo.title")}
+              {currentStep && (
+                <span className="ml-2 text-xs font-normal text-muted-foreground/70">
+                  - {currentStep}
+                </span>
+              )}
+            </span>
             <span className="text-xs text-muted-foreground font-normal">
               {completedCount}/{todos.length} {progress}%
             </span>
@@ -48,7 +56,7 @@ export function TodoList({ todos, progress = 0 }: TodoListProps) {
                 className="flex items-center gap-1.5 text-xs text-foreground/80"
               >
                 {isCompleted ? (
-                  <CheckCircle2 className="size-3.5 text-green-500 shrink-0" />
+                  <CheckCircle2 className="size-3.5 text-foreground shrink-0" />
                 ) : (
                   <Circle className="size-3.5 text-muted-foreground shrink-0" />
                 )}

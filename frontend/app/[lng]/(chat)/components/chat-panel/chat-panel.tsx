@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { ChatMessageList } from "../chat-message-list";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, SendHorizontal } from "lucide-react";
 import { TodoList } from "./todo-list";
 import { StatusBar } from "./status-bar";
 import type {
@@ -10,6 +10,7 @@ import type {
   ChatMessage,
   StatePatch,
 } from "@/lib/api-types";
+import { chatApi } from "@/lib/api/chat";
 
 interface ChatPanelProps {
   session: ExecutionSession | null;
@@ -46,14 +47,19 @@ export function ChatPanel({
     messages.length,
   ]);
 
-  const handleSend = () => {
-    if (!inputValue.trim()) return;
+  const handleSend = async () => {
+    if (!inputValue.trim() || !session?.session_id) return;
 
-    // Create a new user message
+    const content = inputValue;
+    const sessionId = session.session_id;
+
+    console.log(`[Chat] Sending message to session ${sessionId}:`, content);
+
+    // Create a new user message for instant UI update
     const newMessage: ChatMessage = {
       id: `msg-${Date.now()}`,
       role: "user",
-      content: inputValue,
+      content,
       status: "sent",
       timestamp: new Date().toISOString(),
     };
@@ -64,8 +70,20 @@ export function ChatPanel({
     // Clear the input
     setInputValue("");
 
-    // TODO: Send message to API and get response
-    console.log("Sending message:", inputValue);
+    try {
+      // Call send message API
+      await chatApi.sendMessage(sessionId, content);
+      console.log("[Chat] Message sent successfully");
+
+      // 2. Get AI messages
+      const newMessages = await chatApi.getMessages(sessionId, newMessage.id);
+      console.log(`[Chat] Received ${newMessages.length} new messages`);
+
+      // Update messages with AI response
+      setMessages((prev) => [...prev, ...newMessages]);
+    } catch (error) {
+      console.error("[Chat] Failed to send message or get reply:", error);
+    }
   };
 
   const hasSkills =
@@ -135,9 +153,9 @@ export function ChatPanel({
           <button
             onClick={handleSend}
             disabled={!inputValue.trim()}
-            className="flex items-center justify-center size-8 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground transition-colors"
+            className="flex items-center justify-center size-8 rounded-md bg-foreground text-background hover:bg-foreground/90 disabled:bg-muted disabled:text-muted-foreground transition-colors"
           >
-            <MessageSquare className="size-4" />
+            <SendHorizontal className="size-4" />
           </button>
         </div>
       </div>

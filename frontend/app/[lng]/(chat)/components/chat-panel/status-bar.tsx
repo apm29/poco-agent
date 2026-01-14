@@ -27,22 +27,22 @@ export function StatusBar({ skills = [], mcpStatuses = [] }: StatusBarProps) {
   const getSkillStatusIcon = (status: string) => {
     switch (status) {
       case "completed":
-        return <CheckCircle2 className="size-3 text-green-500" />;
+        return <CheckCircle2 className="size-3 text-foreground" />;
       case "failed":
-        return <XCircle className="size-3 text-red-500" />;
+        return <XCircle className="size-3 text-muted-foreground/60" />;
       default:
-        return <AlertCircle className="size-3 text-yellow-500" />;
+        return <AlertCircle className="size-3 text-muted-foreground/80" />;
     }
   };
 
   const getMcpStatusIcon = (status: string) => {
     switch (status) {
       case "connected":
-        return <CheckCircle2 className="size-3 text-green-500" />;
+        return <CheckCircle2 className="size-3 text-foreground" />;
       case "disconnected":
-        return <XCircle className="size-3 text-red-500" />;
+        return <XCircle className="size-3 text-muted-foreground/60" />;
       default:
-        return <AlertCircle className="size-3 text-orange-500" />;
+        return <AlertCircle className="size-3 text-muted-foreground/80" />;
     }
   };
 
