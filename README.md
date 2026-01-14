@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/logo.png" alt="OpenCoWork Logo" width="200" height="200">
+  <img src="assets/logo.JPG" alt="OpenCoWork Logo" width="150" height="150" style="border-radius: 25px;">
 
 # OpenCoWork
 
