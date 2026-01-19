@@ -48,6 +48,7 @@ export function ArtifactsHeader({
         toast.error("归档文件暂不可用");
       }
     } catch (error) {
+      console.error("[Artifacts] Failed to download workspace archive", error);
       toast.error("下载失败");
     }
   };

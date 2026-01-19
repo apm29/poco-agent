@@ -13,7 +13,7 @@ export interface McpDisplayItem {
   config?: UserMcpConfig;
 }
 
-export function useMcpLibrary() {
+export function useMcpCatalog() {
   const { t } = useT("translation");
   const [presets, setPresets] = useState<McpPreset[]>([]);
   const [configs, setConfigs] = useState<UserMcpConfig[]>([]);

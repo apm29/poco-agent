@@ -1,13 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Puzzle, Server, Clock, Sparkles, Key } from "lucide-react";
 
 import { useT } from "@/lib/i18n/client";
 import { FeatureCard } from "@/components/ui/feature-card";
 
-interface LibraryCard {
+interface CapabilitiesCard {
   id: string;
   icon: React.ReactNode;
   title: string;
@@ -19,11 +19,17 @@ interface LibraryCard {
   comingSoon?: boolean;
 }
 
-export function LibraryGrid() {
+export function CapabilitiesGrid() {
   const { t } = useT("translation");
   const router = useRouter();
+  const params = useParams();
+  const lng = React.useMemo(() => {
+    const value = params?.lng;
+    if (!value) return undefined;
+    return Array.isArray(value) ? value[0] : value;
+  }, [params]);
 
-  const cards: LibraryCard[] = React.useMemo(
+  const cards: CapabilitiesCard[] = React.useMemo(
     () => [
       {
         id: "skills-store",
@@ -36,7 +42,7 @@ export function LibraryGrid() {
           t("library.skillsStore.feature3"),
         ],
         actionLabel: t("library.skillsStore.action"),
-        actionHref: "/library/skills",
+        actionHref: "/capabilities/skills",
         comingSoon: false,
       },
       {
@@ -50,7 +56,7 @@ export function LibraryGrid() {
           t("library.mcpInstall.feature3"),
         ],
         actionLabel: t("library.mcpInstall.action"),
-        actionHref: "/library/mcp",
+        actionHref: "/capabilities/mcp",
         comingSoon: false,
       },
       {
@@ -67,7 +73,7 @@ export function LibraryGrid() {
           t("library.envVars.card.feature3", "加密传输和存储"),
         ],
         actionLabel: t("library.envVars.card.action", "管理变量"),
-        actionHref: "/library/env-vars",
+        actionHref: "/capabilities/env-vars",
         comingSoon: false,
       },
       {
@@ -81,7 +87,7 @@ export function LibraryGrid() {
           t("library.scheduledTasks.feature3"),
         ],
         actionLabel: t("library.scheduledTasks.action"),
-        actionHref: "/library/scheduled-tasks",
+        actionHref: "/capabilities/scheduled-tasks",
         badge: t("library.comingSoon"),
         comingSoon: true,
       },
@@ -96,7 +102,7 @@ export function LibraryGrid() {
           t("library.more.feature3"),
         ],
         actionLabel: t("library.more.action"),
-        actionHref: "/library/more",
+        actionHref: "/capabilities/more",
         badge: t("library.comingSoon"),
         comingSoon: true,
       },
@@ -110,9 +116,9 @@ export function LibraryGrid() {
         console.log("Coming soon:", href);
         return;
       }
-      router.push(href);
+      router.push(lng ? `/${lng}${href}` : href);
     },
-    [router],
+    [router, lng],
   );
 
   return (

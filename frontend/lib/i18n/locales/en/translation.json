@@ -6,7 +6,7 @@
   "sidebar": {
     "newTask": "New Task",
     "search": "Search",
-    "library": "Library",
+    "library": "Capabilities",
     "projects": "Projects",
     "newProject": "New Project",
     "newProjectPrompt": "Enter project name:",
@@ -156,7 +156,7 @@
     "noResults": "No results found"
   },
   "library": {
-    "title": "Library",
+    "title": "Capabilities",
     "subtitle": "Manage your skills, plugins and scheduled tasks",
     "comingSoon": "Coming Soon",
     "skillsStore": {

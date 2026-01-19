@@ -1,0 +1,55 @@
+"use client";
+
+import * as React from "react";
+
+import type { ProjectItem, TaskHistoryItem } from "@/features/projects/types";
+
+export type AddTaskOptions = {
+  timestamp?: string;
+  status?: TaskHistoryItem["status"];
+  projectId?: string;
+  id?: string;
+};
+
+export interface AppShellContextValue {
+  lng: string;
+  openSettings: () => void;
+
+  projects: ProjectItem[];
+  addProject: (name: string) => Promise<ProjectItem | null>;
+  updateProject: (
+    projectId: string,
+    updates: { name?: string },
+  ) => Promise<ProjectItem | null>;
+  deleteProject: (projectId: string) => Promise<void>;
+
+  taskHistory: TaskHistoryItem[];
+  addTask: (title: string, options?: AddTaskOptions) => TaskHistoryItem;
+  removeTask: (taskId: string) => Promise<void>;
+  moveTask: (taskId: string, projectId: string | null) => Promise<void>;
+  refreshTasks: () => Promise<void>;
+}
+
+const AppShellContext = React.createContext<AppShellContextValue | null>(null);
+
+export function AppShellProvider({
+  value,
+  children,
+}: {
+  value: AppShellContextValue;
+  children: React.ReactNode;
+}) {
+  return (
+    <AppShellContext.Provider value={value}>
+      {children}
+    </AppShellContext.Provider>
+  );
+}
+
+export function useAppShell() {
+  const context = React.useContext(AppShellContext);
+  if (!context) {
+    throw new Error("useAppShell must be used within AppShellProvider");
+  }
+  return context;
+}

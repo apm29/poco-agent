@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   CommandDialog,
   CommandEmpty,
@@ -29,6 +29,12 @@ export function GlobalSearchDialog({
 }: GlobalSearchDialogProps) {
   const { t } = useT("translation");
   const router = useRouter();
+  const params = useParams();
+  const lng = React.useMemo(() => {
+    const value = params?.lng;
+    if (!value) return undefined;
+    return Array.isArray(value) ? value[0] : value;
+  }, [params]);
   const [searchQuery, setSearchQuery] = React.useState("");
   const { tasks, projects, messages, isLoading } = useSearchData();
   const [mounted, setMounted] = React.useState(false);
@@ -80,15 +86,15 @@ export function GlobalSearchDialog({
 
     switch (type) {
       case "task":
-        router.push(`/chat/${id}`);
+        router.push(lng ? `/${lng}/chat/${id}` : `/chat/${id}`);
         break;
       case "project":
         // TODO: Navigate to project page when implemented
-        router.push(`/chat/new`);
+        router.push(lng ? `/${lng}/chat/new` : `/chat/new`);
         break;
       case "message":
         // Navigate to chat page and scroll to message
-        router.push(`/chat/${id}`);
+        router.push(lng ? `/${lng}/chat/${id}` : `/chat/${id}`);
         break;
     }
   };

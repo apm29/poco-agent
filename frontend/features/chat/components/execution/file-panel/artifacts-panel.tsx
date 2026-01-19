@@ -14,12 +14,12 @@ interface ArtifactsPanelProps {
   fileChanges?: FileChange[];
   sessionId?: string;
   sessionStatus?:
-  | "running"
-  | "accepted"
-  | "completed"
-  | "failed"
-  | "cancelled"
-  | "stopped";
+    | "running"
+    | "accepted"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "stopped";
 }
 
 /**
@@ -130,7 +130,7 @@ export function ArtifactsPanel({
       <div
         className={cn(
           "flex-1 min-h-0 grid grid-cols-1 gap-0 transition-all duration-200 overflow-hidden",
-          isSidebarCollapsed ? "md:grid-cols-1" : "md:grid-cols-[3fr_1fr]",
+          isSidebarCollapsed ? "md:grid-cols-1" : "md:grid-cols-[2fr_1fr]",
         )}
       >
         <div className="min-w-0 border-b border-border/60 bg-background md:border-b-0 overflow-hidden">

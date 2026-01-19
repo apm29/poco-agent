@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   MoreHorizontal,
   FolderPlus,
@@ -38,6 +38,7 @@ interface Project {
 
 interface DraggableTaskProps {
   task: TaskHistoryItem;
+  lng?: string;
   onDeleteTask: (taskId: string) => Promise<void> | void;
   onMoveClick: (task: TaskHistoryItem) => void;
   isSelectionMode?: boolean;
@@ -51,6 +52,7 @@ interface DraggableTaskProps {
  */
 function DraggableTask({
   task,
+  lng,
   onDeleteTask,
   onMoveClick,
   isSelectionMode,
@@ -114,7 +116,7 @@ function DraggableTask({
       e.preventDefault();
       onToggleSelection?.(task.id);
     } else {
-      router.push(`/chat/${task.id}`);
+      router.push(lng ? `/${lng}/chat/${task.id}` : `/chat/${task.id}`);
     }
   };
 
@@ -264,6 +266,13 @@ export function TaskHistoryList({
   onToggleTaskSelection?: (taskId: string) => void;
   onEnableSelectionMode?: (taskId: string) => void;
 }) {
+  const params = useParams();
+  const lng = React.useMemo(() => {
+    const value = params?.lng;
+    if (!value) return undefined;
+    return Array.isArray(value) ? value[0] : value;
+  }, [params]);
+
   // Dialog states
   const [renameDialogOpen, setRenameDialogOpen] = React.useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = React.useState(false);
@@ -300,6 +309,7 @@ export function TaskHistoryList({
           <DraggableTask
             key={task.id}
             task={task}
+            lng={lng}
             onDeleteTask={onDeleteTask}
             onMoveClick={handleMoveClick}
             isSelectionMode={isSelectionMode}

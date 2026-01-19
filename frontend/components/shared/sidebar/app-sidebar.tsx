@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { GlobalSearchDialog } from "@/features/search/components/global-search-dialog";
 import { useSearchDialog } from "@/features/search/hooks/use-search-dialog";
 import { CreateProjectDialog } from "@/features/projects/components/create-project-dialog";
@@ -41,9 +41,16 @@ export function AppSidebar({
   onOpenSettings,
 }: AppSidebarProps) {
   const router = useRouter();
+  const params = useParams();
   const { isSearchOpen, setIsSearchOpen } = useSearchDialog();
   const [isCreateProjectDialogOpen, setIsCreateProjectDialogOpen] =
     React.useState(false);
+
+  const lng = React.useMemo(() => {
+    const value = params?.lng;
+    if (!value) return undefined;
+    return Array.isArray(value) ? value[0] : value;
+  }, [params]);
 
   // 处理新建任务
   const handleNewTask = React.useCallback(() => {
@@ -51,9 +58,10 @@ export function AppSidebar({
     if (onNewTask) {
       onNewTask();
     } else {
-      router.push("/");
+      // Prefer keeping current language when we're under /[lng]/...
+      router.push(lng ? `/${lng}/home` : "/");
     }
-  }, [router, onNewTask]);
+  }, [router, onNewTask, lng]);
 
   // 处理创建项目
   const handleCreateProject = React.useCallback(

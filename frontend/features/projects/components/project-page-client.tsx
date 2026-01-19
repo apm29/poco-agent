@@ -4,20 +4,16 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 
 import { useT } from "@/lib/i18n/client";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 import { useAutosizeTextarea } from "@/features/home/hooks/use-autosize-textarea";
-import { useTaskHistory } from "@/features/projects/hooks/use-task-history";
-import { useProjects } from "@/features/projects/hooks/use-projects";
-import { useProjectDeletion } from "@/features/projects/hooks/use-project-deletion";
 import { createSessionAction } from "@/features/chat/actions/session-actions";
 import type { InputFile } from "@/features/chat/types/api/session";
 
-import { AppSidebar } from "@/components/shared/sidebar/app-sidebar";
 import { ProjectHeader } from "@/features/projects/components/project-header";
 import { KeyboardHints } from "@/features/home/components/keyboard-hints";
 import { QuickActions } from "@/features/home/components/quick-actions";
 import { TaskComposer } from "@/features/home/components/task-composer";
+import { useAppShell } from "@/components/shared/app-shell-context";
 
 interface ProjectPageClientProps {
   projectId: string;
@@ -27,20 +23,12 @@ export function ProjectPageClient({ projectId }: ProjectPageClientProps) {
   const { t } = useT("translation");
   const router = useRouter();
 
-  const { projects, addProject, updateProject, removeProject } = useProjects(
-    {},
-  );
+  const { lng, projects, taskHistory, addTask, updateProject, deleteProject } =
+    useAppShell();
   const currentProject = React.useMemo(
     () => projects.find((p) => p.id === projectId) || projects[0],
     [projects, projectId],
   );
-
-  const { taskHistory, addTask, removeTask, moveTask } = useTaskHistory({});
-  const deleteProject = useProjectDeletion({
-    taskHistory,
-    moveTask,
-    removeProject,
-  });
 
   const [inputValue, setInputValue] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -51,10 +39,6 @@ export function ProjectPageClient({ projectId }: ProjectPageClientProps) {
   const focusComposer = React.useCallback(() => {
     requestAnimationFrame(() => textareaRef.current?.focus());
   }, []);
-
-  const handleNewTask = React.useCallback(() => {
-    router.push(`/chat/new?projectId=${projectId}`);
-  }, [router, projectId]);
 
   const handleSendTask = React.useCallback(
     async (files?: InputFile[]) => {
@@ -85,14 +69,14 @@ export function ProjectPageClient({ projectId }: ProjectPageClientProps) {
 
         setInputValue("");
 
-        router.push(`/chat/${session.sessionId}`);
+        router.push(`/${lng}/chat/${session.sessionId}`);
       } catch (error) {
         console.error("[Project] Failed to create session", error);
       } finally {
         setIsSubmitting(false);
       }
     },
-    [addTask, inputValue, isSubmitting, projectId, router],
+    [addTask, inputValue, isSubmitting, lng, projectId, router],
   );
 
   const handleQuickActionPick = React.useCallback(
@@ -114,70 +98,47 @@ export function ProjectPageClient({ projectId }: ProjectPageClientProps) {
     async (targetProjectId: string) => {
       await deleteProject(targetProjectId);
       if (targetProjectId === projectId) {
-        router.push("/home");
+        router.push(`/${lng}/home`);
       }
     },
-    [deleteProject, projectId, router],
-  );
-
-  const handleRenameTask = React.useCallback(
-    (taskId: string, newName: string) => {
-      console.log("Rename task:", taskId, "to:", newName);
-    },
-    [],
+    [deleteProject, projectId, lng, router],
   );
 
   return (
-    <SidebarProvider defaultOpen={true}>
-      <div className="flex min-h-svh w-full overflow-hidden bg-background">
-        <AppSidebar
-          projects={projects}
-          taskHistory={taskHistory}
-          onNewTask={handleNewTask}
-          onDeleteTask={removeTask}
-          onRenameTask={handleRenameTask}
-          onMoveTaskToProject={moveTask}
-          onCreateProject={addProject}
-          onRenameProject={handleRenameProject}
-          onDeleteProject={handleDeleteProject}
-        />
+    <>
+      <ProjectHeader
+        project={currentProject}
+        onRenameProject={handleRenameProject}
+        onDeleteProject={handleDeleteProject}
+      />
 
-        <SidebarInset className="flex flex-col bg-muted/30">
-          <ProjectHeader
-            project={currentProject}
-            onRenameProject={handleRenameProject}
-            onDeleteProject={handleDeleteProject}
+      <div className="flex flex-1 flex-col items-center justify-center px-6 py-10">
+        <div className="w-full max-w-2xl">
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-medium tracking-tight text-foreground">
+              {currentProject?.name || t("hero.title")}
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t("project.subtitle", {
+                count: taskHistory.filter(
+                  (task) => task.projectId === projectId,
+                ).length,
+              })}
+            </p>
+          </div>
+
+          <TaskComposer
+            textareaRef={textareaRef}
+            value={inputValue}
+            onChange={setInputValue}
+            onSend={handleSendTask}
+            isSubmitting={isSubmitting}
           />
 
-          <div className="flex flex-1 flex-col items-center justify-center px-6 py-10">
-            <div className="w-full max-w-2xl">
-              <div className="mb-8 text-center">
-                <h1 className="text-3xl font-medium tracking-tight text-foreground">
-                  {currentProject?.name || t("hero.title")}
-                </h1>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {t("project.subtitle", {
-                    count: taskHistory.filter(
-                      (task) => task.projectId === projectId,
-                    ).length,
-                  })}
-                </p>
-              </div>
-
-              <TaskComposer
-                textareaRef={textareaRef}
-                value={inputValue}
-                onChange={setInputValue}
-                onSend={handleSendTask}
-                isSubmitting={isSubmitting}
-              />
-
-              <QuickActions onPick={handleQuickActionPick} />
-              <KeyboardHints />
-            </div>
-          </div>
-        </SidebarInset>
+          <QuickActions onPick={handleQuickActionPick} />
+          <KeyboardHints />
+        </div>
       </div>
-    </SidebarProvider>
+    </>
   );
 }

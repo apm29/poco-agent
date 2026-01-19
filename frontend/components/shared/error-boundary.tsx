@@ -4,6 +4,7 @@ import { Component, ReactNode } from "react";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logError } from "@/lib/errors";
+import { fallbackLng, languages } from "@/lib/i18n/settings";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -95,7 +96,9 @@ export class ErrorBoundary extends Component<
   };
 
   handleGoHome = () => {
-    window.location.href = "/";
+    const firstSegment = window.location.pathname.split("/")[1] || "";
+    const lng = languages.includes(firstSegment) ? firstSegment : fallbackLng;
+    window.location.href = `/${lng}/home`;
   };
 
   render() {

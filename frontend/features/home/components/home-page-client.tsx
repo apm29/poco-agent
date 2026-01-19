@@ -4,37 +4,21 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 
 import { useT } from "@/lib/i18n/client";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 import { useAutosizeTextarea } from "../hooks/use-autosize-textarea";
-import { useTaskHistory } from "@/features/projects/hooks/use-task-history";
-import { useProjects } from "@/features/projects/hooks/use-projects";
-import { useProjectDeletion } from "@/features/projects/hooks/use-project-deletion";
 
-import { AppSidebar } from "@/components/shared/sidebar/app-sidebar";
 import { HomeHeader } from "./home-header";
 import { TaskComposer } from "./task-composer";
 import { ConnectorsBar } from "./connectors-bar";
 import { createSessionAction } from "@/features/chat/actions/session-actions";
 import type { InputFile } from "@/features/chat/types/api/session";
 
-import { SettingsDialog } from "@/features/settings/components/settings-dialog";
+import { useAppShell } from "@/components/shared/app-shell-context";
 
 export function HomePageClient() {
   const { t } = useT("translation");
   const router = useRouter();
-
-  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
-
-  const { projects, addProject, updateProject, removeProject } = useProjects(
-    {},
-  );
-  const { taskHistory, addTask, removeTask, moveTask } = useTaskHistory({});
-  const deleteProject = useProjectDeletion({
-    taskHistory,
-    moveTask,
-    removeProject,
-  });
+  const { lng, addTask, openSettings } = useAppShell();
 
   const [inputValue, setInputValue] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -42,19 +26,13 @@ export function HomePageClient() {
 
   useAutosizeTextarea(textareaRef, inputValue);
 
-  const handleNewTask = React.useCallback(() => {
-    // Navigate to home for new task
-    router.push("/");
-  }, [router]);
-
-  const handleOpenSettings = React.useCallback(() => {
-    setIsSettingsOpen(true);
-  }, []);
-
   const handleSendTask = React.useCallback(
     async (files?: InputFile[]) => {
       const inputFiles = files ?? [];
-      if ((inputValue.trim() === "" && inputFiles.length === 0) || isSubmitting) {
+      if (
+        (inputValue.trim() === "" && inputFiles.length === 0) ||
+        isSubmitting
+      ) {
         return;
       }
 
@@ -65,7 +43,8 @@ export function HomePageClient() {
         // 1. Call create session API
         const session = await createSessionAction({
           prompt: inputValue,
-          config: inputFiles.length > 0 ? { input_files: inputFiles } : undefined,
+          config:
+            inputFiles.length > 0 ? { input_files: inputFiles } : undefined,
         });
         console.log("session", session);
         const sessionId = session.sessionId;
@@ -85,98 +64,40 @@ export function HomePageClient() {
         setInputValue("");
 
         // 4. Navigate to the chat page
-        router.push(`/chat/${sessionId}`);
+        router.push(`/${lng}/chat/${sessionId}`);
       } catch (error) {
         console.error("[Home] Failed to create session:", error);
       } finally {
         setIsSubmitting(false);
       }
     },
-    [addTask, inputValue, isSubmitting, router],
-  );
-
-  const handleCreateProject = React.useCallback(
-    (name: string) => {
-      addProject(name);
-    },
-    [addProject],
-  );
-
-  const handleRenameProject = React.useCallback(
-    (projectId: string, newName: string) => {
-      updateProject(projectId, { name: newName });
-    },
-    [updateProject],
-  );
-
-  const handleDeleteProject = React.useCallback(
-    async (projectId: string) => {
-      await deleteProject(projectId);
-    },
-    [deleteProject],
-  );
-
-  const handleRenameTask = React.useCallback(
-    (taskId: string, newName: string) => {
-      // TODO: Implement task rename logic
-      console.log("Rename task:", taskId, "to:", newName);
-    },
-    [],
-  );
-
-  const handleMoveTaskToProject = React.useCallback(
-    (taskId: string, projectId: string | null) => {
-      moveTask(taskId, projectId);
-    },
-    [moveTask],
+    [addTask, inputValue, isSubmitting, lng, router],
   );
 
   return (
-    <SidebarProvider defaultOpen={true}>
-      <div className="flex min-h-svh w-full overflow-hidden bg-background">
-        <AppSidebar
-          projects={projects}
-          taskHistory={taskHistory}
-          onNewTask={handleNewTask}
-          onDeleteTask={removeTask}
-          onRenameTask={handleRenameTask}
-          onMoveTaskToProject={handleMoveTaskToProject}
-          onCreateProject={handleCreateProject}
-          onRenameProject={handleRenameProject}
-          onDeleteProject={handleDeleteProject}
-          onOpenSettings={handleOpenSettings}
-        />
+    <>
+      <HomeHeader onOpenSettings={openSettings} />
 
-        <SidebarInset className="flex flex-col bg-muted/30">
-          <HomeHeader onOpenSettings={handleOpenSettings} />
-
-          <div className="flex flex-1 flex-col items-center justify-center px-6 py-10">
-            <div className="w-full max-w-2xl">
-              {/* 欢迎语 */}
-              <div className="mb-8 text-center">
-                <h1 className="text-3xl font-medium tracking-tight text-foreground">
-                  {t("hero.title")}
-                </h1>
-              </div>
-
-              <TaskComposer
-                textareaRef={textareaRef}
-                value={inputValue}
-                onChange={setInputValue}
-                onSend={handleSendTask}
-                isSubmitting={isSubmitting}
-              />
-
-              <ConnectorsBar />
-            </div>
+      <div className="flex flex-1 flex-col items-center justify-start px-6 pt-[20vh]">
+        <div className="w-full max-w-2xl">
+          {/* 欢迎语 */}
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-medium tracking-tight text-foreground">
+              {t("hero.title")}
+            </h1>
           </div>
-        </SidebarInset>
 
-        <SettingsDialog
-          open={isSettingsOpen}
-          onOpenChange={setIsSettingsOpen}
-        />
+          <TaskComposer
+            textareaRef={textareaRef}
+            value={inputValue}
+            onChange={setInputValue}
+            onSend={handleSendTask}
+            isSubmitting={isSubmitting}
+          />
+
+          <ConnectorsBar />
+        </div>
       </div>
-    </SidebarProvider>
+    </>
   );
 }

@@ -6,7 +6,7 @@
   "sidebar": {
     "newTask": "新建任务",
     "search": "搜索",
-    "library": "库",
+    "library": "能力",
     "projects": "项目",
     "newProject": "新建项目",
     "newProjectPrompt": "请输入项目名称：",
@@ -156,7 +156,7 @@
     "noResults": "未找到结果"
   },
   "library": {
-    "title": "库",
+    "title": "能力",
     "subtitle": "管理您的技能、插件和定时任务",
     "comingSoon": "即将推出",
     "skillsStore": {

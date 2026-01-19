@@ -22,6 +22,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import type { ProjectItem } from "@/features/projects/types";
 import { RenameProjectDialog } from "@/features/projects/components/rename-project-dialog";
+import { useAppShell } from "@/components/shared/app-shell-context";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,13 +47,14 @@ export function ProjectHeader({
 }: ProjectHeaderProps) {
   const { t } = useT("translation");
   const router = useRouter();
+  const { lng } = useAppShell();
   const [isRenameDialogOpen, setIsRenameDialogOpen] = React.useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
 
   const handleGoBack = React.useCallback(() => {
-    router.push("/home");
-  }, [router]);
+    router.push(`/${lng}/home`);
+  }, [router, lng]);
 
   const handleRename = React.useCallback(
     (newName: string) => {

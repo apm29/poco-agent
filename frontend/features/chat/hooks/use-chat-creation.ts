@@ -1,6 +1,7 @@
 import * as React from "react";
 import { STREAMING_CHAR_DELAY } from "@/features/home/model/constants";
 import { createSessionAction } from "@/features/chat/actions/session-actions";
+import { fallbackLng, languages } from "@/lib/i18n/settings";
 import type {
   ChatMessage,
   ChatSession,
@@ -213,7 +214,11 @@ export function useChatCreation({
           // Save user prompt to localStorage for execution page
           localStorage.setItem(`session_prompt_${response.sessionId}`, content);
           // Redirect to execution page
-          window.location.href = `/chat/${response.sessionId}`;
+          const firstSegment = window.location.pathname.split("/")[1] || "";
+          const lng = languages.includes(firstSegment)
+            ? firstSegment
+            : fallbackLng;
+          window.location.href = `/${lng}/chat/${response.sessionId}`;
         } catch (error) {
           console.error("[Chat] Failed to create session:", error);
         }

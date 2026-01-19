@@ -3,7 +3,6 @@
 import * as React from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
-  Library,
   MessageSquare,
   MoreHorizontal,
   PanelLeftClose,
@@ -12,6 +11,7 @@ import {
   Plus,
   Search,
   SlidersHorizontal,
+  Sparkles,
   Trash2,
   X,
 } from "lucide-react";
@@ -52,10 +52,10 @@ import { useSearchDialog } from "@/features/search/hooks/use-search-dialog";
 const TOP_NAV_ITEMS = [
   { id: "search", labelKey: "sidebar.search", icon: Search, href: null },
   {
-    id: "library",
+    id: "capabilities",
     labelKey: "sidebar.library",
-    icon: Library,
-    href: "/library",
+    icon: Sparkles,
+    href: "/capabilities",
   },
 ] as const;
 
@@ -151,6 +151,12 @@ export function MainSidebar({
   const params = useParams();
   const { toggleSidebar } = useSidebar();
   const { searchKey } = useSearchDialog();
+
+  const lng = React.useMemo(() => {
+    const value = params?.lng;
+    if (!value) return undefined;
+    return Array.isArray(value) ? value[0] : value;
+  }, [params]);
 
   // Selection Mode State
   const [isSelectionMode, setIsSelectionMode] = React.useState(false);
@@ -305,9 +311,11 @@ export function MainSidebar({
 
   const handleProjectClick = React.useCallback(
     (projectId: string) => {
-      router.push(`/projects/${projectId}`);
+      router.push(
+        lng ? `/${lng}/projects/${projectId}` : `/projects/${projectId}`,
+      );
     },
-    [router],
+    [router, lng],
   );
 
   const toggleProjectExpanded = React.useCallback((projectId: string) => {
@@ -379,8 +387,8 @@ export function MainSidebar({
                 <PanelLeftOpen className="hidden size-4 group-data-[collapsible=icon]:group-hover/logo:block" />
               </button>
               <span
-                onClick={() => router.push("/")}
-                className="text-sm font-semibold tracking-tight text-sidebar-foreground group-data-[collapsible=icon]:hidden cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => router.push(lng ? `/${lng}/home` : "/")}
+                className="text-xl font-medium tracking-tight text-sidebar-foreground group-data-[collapsible=icon]:hidden cursor-pointer hover:opacity-80 transition-opacity font-[family-name:var(--font-space-grotesk)]"
               >
                 Poco
               </span>
@@ -425,7 +433,7 @@ export function MainSidebar({
                         onClick={() => {
                           if (isDisabled) return; // Disabled - do nothing
                           if (href) {
-                            router.push(href);
+                            router.push(lng ? `/${lng}${href}` : href);
                           }
                         }}
                         className={cn(
