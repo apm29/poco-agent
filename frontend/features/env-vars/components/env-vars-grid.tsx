@@ -21,10 +21,12 @@ interface EnvVarsGridProps {
 function EnvVarsSection({
   title,
   icon,
+  hint,
   children,
 }: {
   title: string;
   icon: React.ReactNode;
+  hint?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -33,6 +35,9 @@ function EnvVarsSection({
         {icon}
         <span>{title}</span>
       </div>
+      {hint ? (
+        <p className="px-1 text-xs text-muted-foreground/80">{hint}</p>
+      ) : null}
       <div className="space-y-2">{children}</div>
     </section>
   );
@@ -80,6 +85,10 @@ export function EnvVarsGrid({
         <EnvVarsSection
           title={t("library.envVars.scope.system", "系统")}
           icon={<Wrench className="size-4" />}
+          hint={t(
+            "library.envVars.systemHint",
+            "系统变量仅展示是否已设置；可通过创建同名个人变量来覆盖",
+          )}
         >
           {systemVars.map((envVar) => {
             const isOverridden = userKeys.has(envVar.key);
@@ -114,12 +123,6 @@ export function EnvVarsGrid({
                       {envVar.description}
                     </p>
                   )}
-                  <p className="mt-1 text-xs text-muted-foreground/80">
-                    {t(
-                      "library.envVars.systemHint",
-                      "系统变量仅展示是否已设置；可通过创建同名个人变量来覆盖",
-                    )}
-                  </p>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -150,6 +153,10 @@ export function EnvVarsGrid({
         <EnvVarsSection
           title={t("library.envVars.scope.user", "个人")}
           icon={<User className="size-4" />}
+          hint={t(
+            "library.envVars.userHint",
+            "个人变量不会在前端展示明文；更新时请输入新值（留空表示不修改）",
+          )}
         >
           {userVars.map((envVar) => {
             const overridesSystem = systemKeys.has(envVar.key);
@@ -182,12 +189,6 @@ export function EnvVarsGrid({
                       {envVar.description}
                     </p>
                   )}
-                  <p className="mt-1 text-xs text-muted-foreground/80">
-                    {t(
-                      "library.envVars.userHint",
-                      "个人变量不会在前端展示明文；更新时请输入新值（留空表示不修改）",
-                    )}
-                  </p>
                 </div>
 
                 <div className="flex items-center gap-2">
