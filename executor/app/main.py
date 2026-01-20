@@ -1,19 +1,20 @@
-import logging
-import sys
+import os
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
 from app.api import task_router
+from app.core.middleware import setup_middleware
+from app.core.observability.logging import configure_logging
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)],
+configure_logging(
+    debug=os.getenv("DEBUG", "").strip().lower() in {"1", "true", "yes", "y", "on"},
+    service_name="executor",
 )
 
 app = FastAPI()
 
+setup_middleware(app)
 app.include_router(task_router)
 
 

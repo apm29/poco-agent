@@ -1,4 +1,6 @@
+import logging
 import os
+import time
 
 from claude_agent_sdk import ClaudeAgentOptions
 from claude_agent_sdk.client import ClaudeSDKClient
@@ -16,9 +18,19 @@ from app.core.workspace import WorkspaceManager
 from app.core.user_input import UserInputClient
 from app.hooks.base import ExecutionContext
 from app.hooks.manager import HookManager
+from app.core.observability.request_context import (
+    generate_request_id,
+    generate_trace_id,
+    reset_request_id,
+    reset_trace_id,
+    set_request_id,
+    set_trace_id,
+)
 from app.schemas.request import TaskConfig
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 
 class AgentExecutor:
@@ -28,11 +40,16 @@ class AgentExecutor:
         hooks: list,
         sdk_session_id: str | None = None,
         user_input_client: UserInputClient | None = None,
+        *,
+        request_id: str | None = None,
+        trace_id: str | None = None,
     ):
         self.session_id = session_id
         self.sdk_session_id = sdk_session_id
         self.hooks = HookManager(hooks)
         self.user_input_client = user_input_client
+        self._request_id = request_id
+        self._trace_id = trace_id
         self.workspace = WorkspaceManager(
             mount_path=os.environ.get("WORKSPACE_PATH", "/workspace")
         )
@@ -40,6 +57,19 @@ class AgentExecutor:
     async def execute(self, prompt: str, config: TaskConfig):
         await self.workspace.prepare(config)
         ctx = ExecutionContext(self.session_id, str(self.workspace.work_path))
+
+        request_id_token = set_request_id(self._request_id or generate_request_id())
+        trace_id_token = set_trace_id(self._trace_id or generate_trace_id())
+
+        started = time.perf_counter()
+        status = "completed"
+        logger.info(
+            "task_started",
+            extra={
+                "session_id": self.session_id,
+                "sdk_session_id": self.sdk_session_id,
+            },
+        )
 
         try:
             await self.hooks.run_on_setup(ctx)
@@ -112,14 +142,30 @@ class AgentExecutor:
                     await self.hooks.run_on_response(ctx, msg)
 
         except Exception as e:
-            import traceback
-
-            traceback.print_exc()
+            status = "failed"
+            logger.exception(
+                "task_failed",
+                extra={
+                    "session_id": self.session_id,
+                    "sdk_session_id": self.sdk_session_id,
+                },
+            )
             await self.hooks.run_on_error(ctx, e)
 
         finally:
             await self.hooks.run_on_teardown(ctx)
             await self.workspace.cleanup()
+            logger.info(
+                "task_finished",
+                extra={
+                    "session_id": self.session_id,
+                    "sdk_session_id": self.sdk_session_id,
+                    "status": status,
+                    "duration_ms": int((time.perf_counter() - started) * 1000),
+                },
+            )
+            reset_request_id(request_id_token)
+            reset_trace_id(trace_id_token)
 
     def _build_input_hint(self, config: TaskConfig) -> str | None:
         inputs = config.input_files or []

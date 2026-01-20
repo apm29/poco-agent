@@ -1,6 +1,12 @@
 import httpx
 
 from app.schemas.callback import AgentCallbackRequest
+from app.core.observability.request_context import (
+    generate_request_id,
+    generate_trace_id,
+    get_request_id,
+    get_trace_id,
+)
 
 
 class CallbackClient:
@@ -14,6 +20,10 @@ class CallbackClient:
                 response = await client.post(
                     self.callback_url,
                     json=report.model_dump(mode="json"),
+                    headers={
+                        "X-Request-ID": get_request_id() or generate_request_id(),
+                        "X-Trace-ID": get_trace_id() or generate_trace_id(),
+                    },
                 )
                 return response.is_success
         except httpx.RequestError:
