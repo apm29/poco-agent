@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RunStatus(str, Enum):
@@ -35,15 +35,6 @@ class RunResponse(BaseModel):
     finished_at: datetime | None
     created_at: datetime
     updated_at: datetime
-
-    @field_serializer("config_snapshot")
-    def _serialize_config_snapshot(self, value: dict | None) -> dict | None:
-        # Backward-compat + security: never expose full MCP configs to callers.
-        if not isinstance(value, dict):
-            return value
-        sanitized = dict(value)
-        sanitized.pop("mcp_config", None)
-        return sanitized
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 

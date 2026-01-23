@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer
+from pydantic import BaseModel, ConfigDict, Field
 from app.schemas.callback import AgentCurrentState
 from app.schemas.input_file import InputFile
 
@@ -55,17 +55,6 @@ class SessionResponse(BaseModel):
     status: str
     created_at: datetime
     updated_at: datetime
-
-    @field_serializer("config_snapshot")
-    def _serialize_config_snapshot(
-        self, value: dict[str, Any] | None
-    ) -> dict[str, Any] | None:
-        # Backward-compat + security: never expose full MCP configs to callers.
-        if not isinstance(value, dict):
-            return value
-        sanitized = dict(value)
-        sanitized.pop("mcp_config", None)
-        return sanitized
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
