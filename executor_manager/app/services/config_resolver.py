@@ -54,7 +54,7 @@ class ConfigResolver:
         await self._ensure_cache()
         env_map = await self._get_env_map(user_id)
 
-        mcp_config = config_snapshot.get("mcp_config") or {}
+        mcp_config = await self._resolve_effective_mcp_config(user_id, config_snapshot)
         skill_files = config_snapshot.get("skill_files") or {}
         input_files = config_snapshot.get("input_files") or []
 
@@ -80,6 +80,91 @@ class ConfigResolver:
 
     async def _get_env_map(self, user_id: str) -> dict[str, str]:
         return await self.backend_client.get_env_map(user_id=user_id)
+
+    async def _resolve_effective_mcp_config(
+        self, user_id: str, config_snapshot: dict
+    ) -> dict:
+        """Resolve MCP config for execution.
+
+        Priority:
+        1) config_snapshot.mcp_server_ids -> fetch full mcp_config via backend internal API
+        2) config_snapshot.mcp_config toggles (server_id -> bool) -> fetch via backend internal API
+        3) legacy config_snapshot.mcp_config already contains full server configs
+        """
+        server_ids = self._normalize_mcp_server_ids(
+            config_snapshot.get("mcp_server_ids")
+        )
+        if server_ids:
+            return await self.backend_client.resolve_mcp_config(
+                user_id=user_id, server_ids=server_ids
+            )
+
+        mcp_config = config_snapshot.get("mcp_config")
+        toggle_ids = self._extract_enabled_server_ids_from_toggles(mcp_config)
+        if toggle_ids is not None:
+            return await self.backend_client.resolve_mcp_config(
+                user_id=user_id, server_ids=toggle_ids
+            )
+
+        return mcp_config if isinstance(mcp_config, dict) else {}
+
+    @staticmethod
+    def _normalize_mcp_server_ids(value: Any) -> list[int]:
+        if not isinstance(value, list):
+            return []
+        result: list[int] = []
+        seen: set[int] = set()
+        for item in value:
+            sid: int | None = None
+            if isinstance(item, int):
+                sid = item
+            elif isinstance(item, str):
+                item = item.strip()
+                if not item:
+                    continue
+                try:
+                    sid = int(item)
+                except ValueError:
+                    sid = None
+            if sid is None:
+                continue
+            if sid in seen:
+                continue
+            seen.add(sid)
+            result.append(sid)
+        return result
+
+    @staticmethod
+    def _extract_enabled_server_ids_from_toggles(value: Any) -> list[int] | None:
+        """Convert {server_id: bool} toggles into enabled server id list.
+
+        Returns None when the value does not look like toggles.
+        """
+        if not isinstance(value, dict):
+            return None
+        if not value:
+            return []
+        ids: list[int] = []
+        seen: set[int] = set()
+        for key, enabled in value.items():
+            if not isinstance(enabled, bool):
+                return None
+            if enabled is not True:
+                continue
+            if not isinstance(key, str):
+                return None
+            key = key.strip()
+            if not key:
+                continue
+            try:
+                sid = int(key)
+            except ValueError:
+                return None
+            if sid in seen:
+                continue
+            seen.add(sid)
+            ids.append(sid)
+        return ids
 
     def _resolve_mcp(self, mcp_config: dict, env_map: dict[str, str]) -> dict:
         resolved: dict = {}
