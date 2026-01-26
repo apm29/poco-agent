@@ -19,6 +19,7 @@ export function ChatMessageList({ messages, isTyping }: ChatMessageListProps) {
   const [showScrollButton, setShowScrollButton] = React.useState(false);
   const [isUserScrolling, setIsUserScrolling] = React.useState(false);
   const lastMessageCountRef = React.useRef(messages.length);
+  const hasInitializedRef = React.useRef(false);
 
   // Check if user has scrolled up
   const checkScrollPosition = React.useCallback(() => {
@@ -66,6 +67,18 @@ export function ChatMessageList({ messages, isTyping }: ChatMessageListProps) {
   }, [checkScrollPosition]);
 
   const prevIsTypingRef = React.useRef(isTyping);
+
+  // Initial scroll to bottom when component mounts with existing messages
+  React.useEffect(() => {
+    if (
+      !hasInitializedRef.current &&
+      messages.length > 0 &&
+      scrollRef.current
+    ) {
+      scrollRef.current.scrollIntoView({ behavior: "auto" });
+      hasInitializedRef.current = true;
+    }
+  }, [messages]);
 
   // Auto-scroll to bottom when new messages arrive (only if user is not scrolling)
   React.useEffect(() => {

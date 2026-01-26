@@ -17,7 +17,7 @@ from app.schemas.session import (
 )
 from app.schemas.tool_execution import ToolExecutionResponse
 from app.schemas.usage import UsageResponse
-from app.schemas.workspace import FileNode
+from app.schemas.workspace import FileNode, WorkspaceArchiveResponse
 from app.services.message_service import MessageService
 from app.services.session_service import SessionService
 from app.services.storage_service import S3StorageService
@@ -295,3 +295,39 @@ async def get_session_workspace_files(
         file_url_builder=build_file_url,
     )
     return Response.success(data=nodes, message="Workspace files retrieved")
+
+
+@router.get(
+    "/{session_id}/workspace/archive",
+    response_model=ResponseSchema[WorkspaceArchiveResponse],
+)
+async def get_session_workspace_archive(
+    session_id: uuid.UUID,
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+) -> JSONResponse:
+    """Get a presigned download URL for the exported workspace archive."""
+    db_session = session_service.get_session(db, session_id)
+    if db_session.user_id != user_id:
+        raise AppException(
+            error_code=ErrorCode.FORBIDDEN,
+            message="Session does not belong to the user",
+        )
+
+    filename = f"workspace-{session_id}.zip"
+    archive_key = (db_session.workspace_archive_key or "").strip()
+    if not archive_key or db_session.workspace_export_status != "ready":
+        return Response.success(
+            data=WorkspaceArchiveResponse(url=None, filename=filename),
+            message="Workspace export not ready",
+        )
+
+    url = storage_service.presign_get(
+        archive_key,
+        response_content_disposition=f'attachment; filename="{filename}"',
+        response_content_type="application/zip",
+    )
+    return Response.success(
+        data=WorkspaceArchiveResponse(url=url, filename=filename),
+        message="Workspace archive URL generated",
+    )

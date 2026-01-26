@@ -2,7 +2,7 @@ import json
 import logging
 import mimetypes
 import os
-import tarfile
+import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -39,7 +39,7 @@ class WorkspaceExportService:
         prefix = f"workspaces/{user_id}/{session_id}"
         files_prefix = f"{prefix}/files"
         manifest_key = f"{prefix}/manifest.json"
-        archive_key = f"{prefix}/archive.tar.gz"
+        archive_key = f"{prefix}/archive.zip"
 
         try:
             files = self._collect_files(workspace_dir)
@@ -79,11 +79,15 @@ class WorkspaceExportService:
                 content_type="application/json",
             )
 
-            archive_path = self._create_archive(workspace_dir, session_id)
+            archive_path = self._create_archive(
+                workspace_dir=workspace_dir,
+                session_id=session_id,
+                files=files,
+            )
             storage_service.upload_file(
                 file_path=str(archive_path),
                 key=archive_key,
-                content_type="application/gzip",
+                content_type="application/zip",
             )
 
             try:
@@ -132,27 +136,25 @@ class WorkspaceExportService:
 
         return files
 
-    def _create_archive(self, workspace_dir: Path, session_id: str) -> Path:
+    def _create_archive(
+        self,
+        *,
+        workspace_dir: Path,
+        session_id: str,
+        files: list[Path],
+    ) -> Path:
         temp_dir = workspace_manager.temp_dir
         temp_dir.mkdir(parents=True, exist_ok=True)
-        archive_path = temp_dir / f"{session_id}.tar.gz"
+        archive_path = temp_dir / f"{session_id}.zip"
 
-        ignore_names = workspace_manager._ignore_names
-        ignore_dot = workspace_manager.ignore_dot_files
-
-        def tar_filter(tarinfo: tarfile.TarInfo) -> tarfile.TarInfo | None:
-            path = Path(tarinfo.name)
-            for part in path.parts:
-                if part in ignore_names:
-                    return None
-                if ignore_dot and part.startswith("."):
-                    return None
-            if tarinfo.issym() or tarinfo.islnk():
-                return None
-            return tarinfo
-
-        with tarfile.open(archive_path, "w:gz") as tar:
-            tar.add(workspace_dir, arcname="workspace", filter=tar_filter)
+        with zipfile.ZipFile(
+            archive_path,
+            "w",
+            compression=zipfile.ZIP_DEFLATED,
+        ) as zipf:
+            for file_path in files:
+                rel_path = file_path.relative_to(workspace_dir).as_posix()
+                zipf.write(file_path, arcname=f"workspace/{rel_path}")
 
         return archive_path
 

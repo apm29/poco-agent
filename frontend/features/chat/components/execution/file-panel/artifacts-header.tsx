@@ -31,15 +31,17 @@ export function ArtifactsHeader({
   const handleDownload = async () => {
     if (!sessionId) return;
     try {
-      const response = await apiClient.get<{ url?: string; message: string }>(
-        API_ENDPOINTS.sessionWorkspaceArchive(sessionId),
-      );
+      const response = await apiClient.get<{
+        url?: string | null;
+        filename?: string | null;
+      }>(API_ENDPOINTS.sessionWorkspaceArchive(sessionId));
 
       if (response.url) {
         // Trigger download
+        const filename = response.filename || `workspace-${sessionId}.zip`;
         const link = document.createElement("a");
         link.href = response.url;
-        link.download = `workspace-${sessionId}.zip`;
+        link.download = filename;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

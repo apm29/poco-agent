@@ -15,3 +15,10 @@ class FileNode(BaseModel):
     mimeType: str | None = None
     oss_status: str | None = None
     oss_meta: dict[str, Any] | None = None
+
+
+class WorkspaceArchiveResponse(BaseModel):
+    """Workspace archive download response."""
+
+    url: str | None = None
+    filename: str
