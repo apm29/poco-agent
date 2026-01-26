@@ -16,6 +16,24 @@ from app.utils.git.operations import (
 logger = logging.getLogger(__name__)
 
 DEFAULT_GIT_EXCLUDES = [
+    # VCS metadata
+    ".git/",
+    ".hg/",
+    ".svn/",
+    # OS / editor junk
+    ".DS_Store",
+    "__pycache__/",
+    ".pytest_cache/",
+    ".mypy_cache/",
+    ".ruff_cache/",
+    # Common dependency/build outputs
+    "node_modules/",
+    ".venv/",
+    "venv/",
+    ".next/",
+    "dist/",
+    "build/",
+    # Agent/runtime artifacts
     ".claude_data/",
     ".claude/",
     "inputs/",

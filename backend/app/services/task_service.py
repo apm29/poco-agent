@@ -84,6 +84,9 @@ class TaskService:
                     error_code=ErrorCode.FORBIDDEN,
                     message="Session does not belong to the user",
                 )
+            # Clear previous execution state so the UI doesn't show stale file changes
+            # while a new run is queued/starting.
+            db_session.state_patch = {}
             if project_id is not None and db_session.project_id != project_id:
                 raise AppException(
                     error_code=ErrorCode.BAD_REQUEST,

@@ -203,6 +203,7 @@ class RunPullService:
             await self.executor_client.execute_task(
                 executor_url=executor_url,
                 session_id=session_id,
+                run_id=str(run_id),
                 prompt=prompt,
                 callback_url=callback_url,
                 callback_token=self.settings.callback_token,

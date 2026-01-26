@@ -99,6 +99,7 @@ class TaskDispatcher:
             await executor_client.execute_task(
                 executor_url=executor_url,
                 session_id=session_id,
+                run_id=None,
                 prompt=prompt,
                 callback_url=callback_url,
                 callback_token=callback_token,

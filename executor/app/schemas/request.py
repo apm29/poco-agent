@@ -27,6 +27,7 @@ class TaskConfig(BaseModel):
 
 class TaskRun(BaseModel):
     session_id: str
+    run_id: str | None = None
     prompt: str
     callback_url: str
     callback_token: str

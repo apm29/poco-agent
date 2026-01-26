@@ -177,6 +177,51 @@ def is_repository(cwd: str | Path | None = None) -> bool:
         return False
 
 
+def has_commits(cwd: str | Path | None = None) -> bool:
+    """
+    Check whether the repository has at least one commit (i.e., HEAD exists).
+
+    Args:
+        cwd: Working directory
+
+    Returns:
+        bool: True if HEAD resolves, False otherwise
+    """
+    try:
+        result = _run_git_command(
+            ["rev-parse", "--verify", "HEAD"],
+            cwd=cwd,
+            check=False,
+        )
+        return result.returncode == 0
+    except (GitNotRepositoryError, GitError):
+        return False
+
+
+def tag_ref(
+    name: str,
+    ref: str | None = None,
+    cwd: str | Path | None = None,
+    force: bool = False,
+) -> None:
+    """
+    Create (or update) a lightweight tag.
+
+    Args:
+        name: Tag name
+        ref: Optional git ref/commit to tag (default: HEAD)
+        cwd: Working directory
+        force: If True, overwrite existing tag
+    """
+    args = ["tag"]
+    if force:
+        args.append("-f")
+    args.append(name)
+    if ref:
+        args.append(ref)
+    _run_git_command(args, cwd=cwd, check=True)
+
+
 def get_git_dir(cwd: str | Path | None = None) -> Path:
     """
     Get the .git directory path.

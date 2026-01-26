@@ -27,6 +27,7 @@ class ExecutorClient:
         self,
         executor_url: str,
         session_id: str,
+        run_id: str | None,
         prompt: str,
         callback_url: str,
         callback_token: str,
@@ -51,6 +52,7 @@ class ExecutorClient:
                 f"{executor_url}/v1/tasks/execute",
                 json={
                     "session_id": session_id,
+                    "run_id": run_id,
                     "prompt": prompt,
                     "callback_url": callback_url,
                     "callback_token": callback_token,

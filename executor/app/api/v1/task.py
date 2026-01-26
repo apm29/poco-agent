@@ -6,6 +6,7 @@ from app.core.callback import CallbackClient
 from app.core.user_input import UserInputClient
 from app.core.engine import AgentExecutor
 from app.hooks.callback import CallbackHook
+from app.hooks.run_snapshot import RunSnapshotHook
 from app.hooks.todo import TodoHook
 from app.hooks.workspace import WorkspaceHook
 from app.core.observability.request_context import get_request_id, get_trace_id
@@ -35,6 +36,7 @@ async def run_task(req: TaskRun, background_tasks: BackgroundTasks) -> dict:
         WorkspaceHook(),
         TodoHook(),
         CallbackHook(client=callback_client),
+        RunSnapshotHook(run_id=req.run_id),
     ]
     executor = AgentExecutor(
         req.session_id,
@@ -50,6 +52,7 @@ async def run_task(req: TaskRun, background_tasks: BackgroundTasks) -> dict:
         "task_execute_accepted",
         extra={
             "session_id": req.session_id,
+            "run_id": req.run_id,
             "resume": bool(req.sdk_session_id),
             "git_branch": cfg.git_branch,
             "has_repo_url": bool((cfg.repo_url or "").strip()),
