@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 import socket
+import time
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -116,11 +117,25 @@ class RunPullService:
             await self._semaphore.acquire()
 
             try:
+                step_started = time.perf_counter()
                 claim = await self.backend_client.claim_run(
                     worker_id=self.worker_id,
                     lease_seconds=lease_seconds,
                     schedule_modes=schedule_modes,
                 )
+                if claim:
+                    logger.info(
+                        "timing",
+                        extra={
+                            "step": "run_pull_claim_run",
+                            "duration_ms": int(
+                                (time.perf_counter() - step_started) * 1000
+                            ),
+                            "worker_id": self.worker_id,
+                            "lease_seconds": lease_seconds,
+                            "schedule_modes": schedule_modes,
+                        },
+                    )
             except Exception as e:
                 logger.error(f"Failed to claim run from backend: {e}")
                 self._semaphore.release()
@@ -159,6 +174,7 @@ class RunPullService:
         self._tasks.clear()
 
     async def _handle_claim(self, claim: dict[str, Any]) -> None:
+        dispatch_started = time.perf_counter()
         run = claim.get("run") or {}
         run_id = run.get("run_id")
         session_id = run.get("session_id")
@@ -175,34 +191,85 @@ class RunPullService:
         container_id = config_snapshot.get("container_id")
 
         callback_url = f"{self.settings.callback_base_url}/api/v1/callback"
+        ctx = {
+            "run_id": str(run_id),
+            "session_id": session_id,
+            "user_id": user_id,
+        }
 
         try:
+            step_started = time.perf_counter()
             resolved_config = await self.config_resolver.resolve(
                 user_id,
                 config_snapshot,
                 session_id=session_id,
                 run_id=str(run_id),
             )
+            logger.info(
+                "timing",
+                extra={
+                    "step": "run_dispatch_resolve_config",
+                    "duration_ms": int((time.perf_counter() - step_started) * 1000),
+                    **ctx,
+                },
+            )
+
+            step_started = time.perf_counter()
             staged_skills = self.skill_stager.stage_skills(
                 user_id=user_id,
                 session_id=session_id,
                 skills=resolved_config.get("skill_files") or {},
             )
             resolved_config["skill_files"] = staged_skills
+            logger.info(
+                "timing",
+                extra={
+                    "step": "run_dispatch_stage_skills",
+                    "duration_ms": int((time.perf_counter() - step_started) * 1000),
+                    "skills_staged": len(staged_skills),
+                    **ctx,
+                },
+            )
+
+            step_started = time.perf_counter()
             staged_inputs = self.attachment_stager.stage_inputs(
                 user_id=user_id,
                 session_id=session_id,
                 inputs=resolved_config.get("input_files") or [],
             )
             resolved_config["input_files"] = staged_inputs
+            logger.info(
+                "timing",
+                extra={
+                    "step": "run_dispatch_stage_inputs",
+                    "duration_ms": int((time.perf_counter() - step_started) * 1000),
+                    "inputs_staged": len(staged_inputs),
+                    **ctx,
+                },
+            )
 
-            executor_url, _ = await self.container_pool.get_or_create_container(
+            step_started = time.perf_counter()
+            (
+                executor_url,
+                container_id,
+            ) = await self.container_pool.get_or_create_container(
                 session_id=session_id,
                 user_id=user_id,
                 container_mode=container_mode,
                 container_id=container_id,
             )
+            logger.info(
+                "timing",
+                extra={
+                    "step": "run_dispatch_get_or_create_container",
+                    "duration_ms": int((time.perf_counter() - step_started) * 1000),
+                    "container_mode": container_mode,
+                    "container_id": container_id,
+                    **ctx,
+                },
+            )
 
+            step_started = time.perf_counter()
             await self.executor_client.execute_task(
                 executor_url=executor_url,
                 session_id=session_id,
@@ -214,14 +281,43 @@ class RunPullService:
                 callback_base_url=self.settings.callback_base_url,
                 sdk_session_id=sdk_session_id,
             )
+            logger.info(
+                "timing",
+                extra={
+                    "step": "run_dispatch_executor_execute_task",
+                    "duration_ms": int((time.perf_counter() - step_started) * 1000),
+                    "container_id": container_id,
+                    **ctx,
+                },
+            )
             try:
+                step_started = time.perf_counter()
                 await self.backend_client.start_run(
                     run_id=run_id, worker_id=self.worker_id
+                )
+                logger.info(
+                    "timing",
+                    extra={
+                        "step": "run_dispatch_backend_start_run",
+                        "duration_ms": int((time.perf_counter() - step_started) * 1000),
+                        "worker_id": self.worker_id,
+                        **ctx,
+                    },
                 )
             except Exception as e:
                 logger.error(f"Failed to mark run {run_id} as running: {e}")
 
             logger.info(f"Dispatched run {run_id} (session={session_id})")
+            logger.info(
+                "timing",
+                extra={
+                    "step": "run_dispatch_total",
+                    "duration_ms": int((time.perf_counter() - dispatch_started) * 1000),
+                    "container_mode": container_mode,
+                    "container_id": container_id,
+                    **ctx,
+                },
+            )
 
         except Exception as e:
             logger.error(

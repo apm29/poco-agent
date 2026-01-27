@@ -2,6 +2,7 @@ import logging
 import os
 import shutil
 import subprocess
+import time
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -34,6 +35,8 @@ class AttachmentStager:
         if not inputs:
             return []
 
+        started_total = time.perf_counter()
+
         session_dir = self.workspace_manager.get_workspace_path(
             user_id=user_id, session_id=session_id, create=True
         )
@@ -65,8 +68,21 @@ class AttachmentStager:
                     )
                 destination = inputs_root / rel_path
                 destination.parent.mkdir(parents=True, exist_ok=True)
+                step_started = time.perf_counter()
                 self.storage_service.download_file(
                     key=str(s3_key), destination=destination
+                )
+                logger.info(
+                    "timing",
+                    extra={
+                        "step": "input_stage_file_download",
+                        "duration_ms": int((time.perf_counter() - step_started) * 1000),
+                        "user_id": user_id,
+                        "session_id": session_id,
+                        "name": name or destination.name,
+                        "rel_path": rel_path,
+                        "s3_key": str(s3_key),
+                    },
                 )
                 staged.append(
                     self._build_staged(item, rel_path, name or destination.name)
@@ -81,10 +97,35 @@ class AttachmentStager:
                 if destination_dir.exists():
                     shutil.rmtree(destination_dir, ignore_errors=True)
                 destination_dir.parent.mkdir(parents=True, exist_ok=True)
+                step_started = time.perf_counter()
                 self._clone_repo(repo_url, destination_dir, branch)
+                logger.info(
+                    "timing",
+                    extra={
+                        "step": "input_stage_repo_clone",
+                        "duration_ms": int((time.perf_counter() - step_started) * 1000),
+                        "user_id": user_id,
+                        "session_id": session_id,
+                        "name": name or repo_name,
+                        "rel_path": rel_path,
+                        "repo_url": repo_url,
+                        "branch": branch,
+                    },
+                )
                 staged.append(self._build_staged(item, rel_path, name or repo_name))
                 continue
 
+        logger.info(
+            "timing",
+            extra={
+                "step": "input_stage_total",
+                "duration_ms": int((time.perf_counter() - started_total) * 1000),
+                "user_id": user_id,
+                "session_id": session_id,
+                "inputs_requested": len(inputs),
+                "inputs_staged": len(staged),
+            },
+        )
         return staged
 
     @staticmethod

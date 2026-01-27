@@ -1,4 +1,6 @@
+import logging
 import re
+import time
 from pathlib import Path
 from typing import Any
 
@@ -6,6 +8,8 @@ from app.core.errors.error_codes import ErrorCode
 from app.core.errors.exceptions import AppException
 from app.services.storage_service import S3StorageService
 from app.services.workspace_manager import WorkspaceManager
+
+logger = logging.getLogger(__name__)
 
 
 class SkillStager:
@@ -30,6 +34,8 @@ class SkillStager:
     ) -> dict[str, dict[str, Any]]:
         if not skills:
             return {}
+
+        started_total = time.perf_counter()
 
         session_dir = self.workspace_manager.get_workspace_path(
             user_id=user_id, session_id=session_id, create=True
@@ -62,6 +68,7 @@ class SkillStager:
             target_dir.mkdir(parents=True, exist_ok=True)
 
             try:
+                step_started = time.perf_counter()
                 if entry.get("is_prefix") or str(s3_key).endswith("/"):
                     self.storage_service.download_prefix(
                         prefix=str(s3_key), destination_dir=target_dir
@@ -72,6 +79,19 @@ class SkillStager:
                     self.storage_service.download_file(
                         key=str(s3_key), destination=destination
                     )
+                logger.info(
+                    "timing",
+                    extra={
+                        "step": "skill_stage_download",
+                        "duration_ms": int((time.perf_counter() - step_started) * 1000),
+                        "user_id": user_id,
+                        "session_id": session_id,
+                        "skill_name": name,
+                        "s3_key": str(s3_key),
+                        "is_prefix": bool(entry.get("is_prefix"))
+                        or str(s3_key).endswith("/"),
+                    },
+                )
             except Exception as exc:
                 raise AppException(
                     error_code=ErrorCode.SKILL_DOWNLOAD_FAILED,
@@ -85,4 +105,15 @@ class SkillStager:
                 "entry": entry,
             }
 
+        logger.info(
+            "timing",
+            extra={
+                "step": "skill_stage_total",
+                "duration_ms": int((time.perf_counter() - started_total) * 1000),
+                "user_id": user_id,
+                "session_id": session_id,
+                "skills_requested": len(skills),
+                "skills_staged": len(staged),
+            },
+        )
         return staged
