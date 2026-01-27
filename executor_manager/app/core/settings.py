@@ -84,6 +84,13 @@ class Settings(BaseSettings):
     executor_image: str = Field(
         default="opencowork/executor:latest", alias="EXECUTOR_IMAGE"
     )
+    # When the manager spawns executor containers via the Docker daemon, it maps the executor
+    # service to a host port and then calls back into it. This host must be reachable from the
+    # manager process itself (e.g. "localhost" on bare-metal, or "host.docker.internal" when
+    # the manager runs inside a container with docker.sock mounted).
+    executor_published_host: str = Field(
+        default="localhost", alias="EXECUTOR_PUBLISHED_HOST"
+    )
 
     workspace_root: str = Field(
         default="/var/lib/opencowork/workspaces", alias="WORKSPACE_ROOT"

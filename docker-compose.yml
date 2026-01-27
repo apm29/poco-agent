@@ -1,0 +1,213 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-poco}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-poco}",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # NOTE: rustfs is expected to be S3-compatible.
+  # Default image is rustfs/rustfs:latest; override RUSTFS_IMAGE / RUSTFS_DATA_DIR if needed.
+  rustfs:
+    image: ${RUSTFS_IMAGE:-rustfs/rustfs:latest}
+    restart: unless-stopped
+    environment:
+      # Keep these generic; rustfs may read its own vars, but setting AWS-standard ones
+      # keeps it compatible with most S3-compatible server configs.
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:-poco}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:-poco-secret}
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:-poco}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:-poco-secret}
+    ports:
+      - "${S3_PORT:-9000}:9000"
+      - "${S3_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - ${RUSTFS_DATA_DIR:-/data}:/data
+
+  rustfs-init:
+    image: ${RUSTFS_INIT_IMAGE:-minio/mc:latest}
+    profiles: ["init"]
+    depends_on:
+      - rustfs
+    environment:
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-poco}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-poco-secret}
+      S3_BUCKET: ${S3_BUCKET:-poco}
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      until mc alias set rustfs http://rustfs:9000 "$$S3_ACCESS_KEY" "$$S3_SECRET_KEY"; do sleep 2; done;
+      mc mb -p "rustfs/$$S3_BUCKET" || true;
+      exit 0;
+
+  backend:
+    image: ${BACKEND_IMAGE:-poco-backend:local}
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      args:
+        APP_UID: ${APP_UID:-1000}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rustfs:
+        condition: service_started
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8000
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
+
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-poco}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      SECRET_KEY: ${BACKEND_SECRET_KEY:-change-this-secret-key-in-production}
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-change-this-token-in-production}
+      EXECUTOR_MANAGER_URL: http://executor-manager:8001
+
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://rustfs:9000}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-poco}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-poco-secret}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET:-poco}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-true}
+      S3_PRESIGN_EXPIRES: ${S3_PRESIGN_EXPIRES:-300}
+
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      OPENAI_DEFAULT_MODEL: ${OPENAI_DEFAULT_MODEL:-gpt-4o-mini}
+      MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-100}
+
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_TO_FILE: ${LOG_TO_FILE:-false}
+      LOG_DIR: ${LOG_DIR:-./logs}
+      LOG_BACKUP_COUNT: ${LOG_BACKUP_COUNT:-14}
+      LOG_SQL: ${LOG_SQL:-false}
+      UVICORN_ACCESS_LOG: ${UVICORN_ACCESS_LOG:-false}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+
+  executor-manager:
+    image: ${EXECUTOR_MANAGER_IMAGE:-poco-executor-manager:local}
+    build:
+      context: .
+      dockerfile: docker/executor_manager/Dockerfile
+      args:
+        APP_UID: ${APP_UID:-1000}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+      rustfs:
+        condition: service_started
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8001
+
+      BACKEND_URL: http://backend:8000
+      # Must be reachable from *executor containers* spawned by the manager.
+      CALLBACK_BASE_URL: ${CALLBACK_BASE_URL:-http://host.docker.internal:8001}
+      CALLBACK_TOKEN: ${CALLBACK_TOKEN:-change-this-token-in-production}
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-change-this-token-in-production}
+
+      ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
+      DEFAULT_MODEL: ${DEFAULT_MODEL:-claude-sonnet-4-20250514}
+
+      EXECUTOR_IMAGE: ${EXECUTOR_IMAGE:-poco-executor:local}
+      # Manager accesses executor containers through published host ports.
+      EXECUTOR_PUBLISHED_HOST: ${EXECUTOR_PUBLISHED_HOST:-host.docker.internal}
+
+      # IMPORTANT: must be a host path (bind mount) accessible by the Docker daemon.
+      WORKSPACE_ROOT: ${PWD}/tmp_workspace
+
+      MAX_CONCURRENT_TASKS: ${MAX_CONCURRENT_TASKS:-5}
+      TASK_PULL_ENABLED: ${TASK_PULL_ENABLED:-true}
+      TASK_PULL_INTERVAL_SECONDS: ${TASK_PULL_INTERVAL_SECONDS:-2}
+      TASK_CLAIM_LEASE_SECONDS: ${TASK_CLAIM_LEASE_SECONDS:-30}
+
+      WORKSPACE_CLEANUP_ENABLED: ${WORKSPACE_CLEANUP_ENABLED:-false}
+      WORKSPACE_ARCHIVE_ENABLED: ${WORKSPACE_ARCHIVE_ENABLED:-true}
+      WORKSPACE_ARCHIVE_DAYS: ${WORKSPACE_ARCHIVE_DAYS:-7}
+      WORKSPACE_IGNORE_DOT_FILES: ${WORKSPACE_IGNORE_DOT_FILES:-true}
+
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://rustfs:9000}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-poco}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-poco-secret}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET:-poco}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-true}
+
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_TO_FILE: ${LOG_TO_FILE:-false}
+      LOG_DIR: ${LOG_DIR:-./logs}
+      LOG_BACKUP_COUNT: ${LOG_BACKUP_COUNT:-14}
+      UVICORN_ACCESS_LOG: ${UVICORN_ACCESS_LOG:-false}
+    # Allow the non-root "app" user (APP_UID) to access the host Docker socket.
+    # On Linux the socket is usually `root:<docker_gid>` with mode 660.
+    group_add:
+      - "${DOCKER_GID:-0}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./tmp_workspace:${PWD}/tmp_workspace
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${EXECUTOR_MANAGER_PORT:-8001}:8001"
+
+  # Build the executor image for the manager to spawn ephemeral containers.
+  executor:
+    # Debug-only service: the manager spawns short-lived executor containers on demand
+    # via docker.sock. This long-running container is only needed for local debugging.
+    profiles: ["debug"]
+    image: ${EXECUTOR_IMAGE:-poco-executor:local}
+    build:
+      context: .
+      dockerfile: docker/executor/Dockerfile
+    restart: unless-stopped
+    environment:
+      ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
+      DEFAULT_MODEL: ${DEFAULT_MODEL:-claude-sonnet-4-20250514}
+      WORKSPACE_PATH: /workspace
+    volumes:
+      - executor_workspace:/workspace
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      # 8000 is used by backend; map executor API elsewhere for local debugging.
+      - "${EXECUTOR_PORT:-8002}:8000"
+      # noVNC / code-server are on 8080 in the sandbox image.
+      - "${EXECUTOR_SANDBOX_PORT:-8081}:8080"
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-poco-frontend:local}
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+        NEXT_PUBLIC_SESSION_POLLING_INTERVAL: ${NEXT_PUBLIC_SESSION_POLLING_INTERVAL:-2500}
+        NEXT_PUBLIC_MESSAGE_POLLING_INTERVAL: ${NEXT_PUBLIC_MESSAGE_POLLING_INTERVAL:-2500}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+
+volumes:
+  postgres_data:
+  executor_workspace:

@@ -46,6 +46,9 @@ class ContainerPool:
         Returns:
             (executor_url, container_id)
         """
+        published_host = (
+            self.settings.executor_published_host or ""
+        ).strip() or "localhost"
         if container_id and container_id in self.containers:
             logger.info(
                 f"Reusing existing container {container_id} for session {session_id}"
@@ -54,7 +57,7 @@ class ContainerPool:
             self.session_to_container[session_id] = container_id
 
             port_info = container.ports["8000/tcp"][0]
-            return f"http://localhost:{port_info['HostPort']}", container_id
+            return f"http://{published_host}:{port_info['HostPort']}", container_id
 
         container_id = f"exec-{session_id[:8]}"
         container_name = f"executor-{session_id[:8]}"
@@ -114,7 +117,7 @@ class ContainerPool:
                 message=f"Container {container_name} has no port mapping",
             )
         host_port = port_info[0]["HostPort"]
-        executor_url = f"http://localhost:{host_port}"
+        executor_url = f"http://{published_host}:{host_port}"
 
         self._wait_for_service_ready(executor_url)
 

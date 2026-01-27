@@ -1,4 +1,6 @@
-FROM ghcr.io/poco-ai/sandbox:latest
+ARG SANDBOX_IMAGE=ghcr.io/poco-ai/sandbox
+ARG SANDBOX_VARIANT=lite
+FROM ${SANDBOX_IMAGE}:${SANDBOX_VARIANT}
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 

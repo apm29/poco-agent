@@ -57,3 +57,31 @@ Demo3：移动端也能流畅使用。
 扫码加入微信群交流：
 
 <img src="assets/wx_group.jpg" alt="微信群二维码" width="180">
+
+---
+
+## 快速开始（Docker Compose）
+
+一条命令启动 **backend / executor-manager / frontend**，并带上 **postgres + rustfs(S3)**：
+
+```bash
+docker compose up -d --build
+```
+
+构建 executor 镜像（执行任务必需；manager 会通过 docker.sock 动态拉起 executor 容器）：
+
+```bash
+docker compose build executor
+```
+
+默认访问地址：
+
+- 前端：`http://localhost:3000`
+- 后端：`http://localhost:8000`（`/docs`）
+- Executor Manager：`http://localhost:8001`（`/docs`）
+
+更多说明：
+
+- Docker Compose：`docs/docker-compose.md`
+- 环境变量配置：`docs/configuration.md`
+- 镜像发布（GitHub Actions）：`docs/image-publishing.md`

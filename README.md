@@ -61,3 +61,31 @@ Demo4: works fine on mobile devices.
 Join our WeChat group for updates and discussion:
 
 <img src="assets/wx_group.jpg" alt="WeChat Group QR" width="180">
+
+---
+
+## Quickstart (Docker Compose)
+
+One command to start **backend / executor-manager / frontend** with **postgres + rustfs(S3)**:
+
+```bash
+docker compose up -d --build
+```
+
+Build the executor image (required for running tasks; manager spawns executor containers via docker.sock):
+
+```bash
+docker compose build executor
+```
+
+Default URLs:
+
+- Frontend: `http://localhost:3000`
+- Backend: `http://localhost:8000` (`/docs`)
+- Executor Manager: `http://localhost:8001` (`/docs`)
+
+Docs:
+
+- Docker Compose: `docs/docker-compose.md`
+- Environment variables: `docs/configuration.md`
+- Image publishing (GitHub Actions): `docs/image-publishing.md`
