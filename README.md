@@ -1,109 +1,101 @@
 <div align="center">
   <img src="assets/logo.JPG" alt="Poco Logo" width="150" height="150" style="border-radius: 25px;">
 
-# Poco
+# Poco: Your Pocket Coworker
 
-**Manus-like autonomy, powered by cloud-based Claude Code**
+**基于云端 Claude Code，打造 Manus 般的 Agent 体验**
 
-An intelligent agent harnessing cloud-based Claude Code to realize a Manus-like autonomous experience.
+你也可以把它看作是 **OpenClaw** 的**更安全**（沙盒隔离）、**更漂亮**（现代 UI）、**配置更简单**（开箱即用）的替代方案。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Docker](https://img.shields.io/badge/Docker-Enabled-blue)](https://www.docker.com/)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com/)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/poco-ai/poco-agent)
 
-[English](./README.md) | [中文](./README_zh.md)
+[English](./README_EN.md) | [中文](./README.md)
 
 </div>
 
 ---
 
-## Positioning
+## 核心功能
 
-Poco turns Claude Code into a cloud-native, autonomous coworker. Built on cloud-based Claude Code, it delivers a Manus-like autonomous experience while keeping humans in the loop, and it plugs into the MCP/Skills ecosystem for rich extensibility.
+- **安全沙盒**：任务在隔离容器中运行，随意安装依赖或修改文件，绝不破坏宿主机环境。
+- **高颜值 UI & 移动端适配**：提供美观的 Web 界面和产物预览，手机上也能随时指挥 Agent。
+- **零配置开箱即用**：无需繁琐的本地环境配置，通过 Docker 一键启动，包含完整运行环境。
+- **全面能力 & MCP/skills 扩展**：完整复刻 Claude Code 原生功能（Slash Command、Plan Mode、AskQuestion），并支持 MCP 协议或自定义 Skills，能力无上限。
+- **异步与定时任务**：支持后台挂机运行和定时触发，关掉网页 Agent 依然在云端自动干活。
+- **更多功能**：内置**浏览器**可自主上网查资料，支持**GitHub 仓库连接**……更多强大功能等你发掘！
 
-## Why Poco
+![home](assets/home.png)
 
-- **Full Claude Code experience**: everything Claude Code can do, not just coding
-- **General-purpose agents via Skills/MCP**: connect tools and data to handle docs, organization, and analysis
-- **Cloud execution with human control**: queue tasks in parallel, confirm before key actions
+<details>
+<summary><strong>点击查看更多功能截图</strong></summary>
+<br>
 
-## What you can do
+**1. 产物前端渲染，页面高颜值**
 
-- Give a goal, get an executable plan with live progress
-- Let agents read, write, and organize real files safely
-- Run multiple tasks in parallel across desktop and mobile
+![output](assets/output.png)
 
-## Ecosystem
+**2. mcp/skills全面支持，配置容易**
 
-Poco embraces the **MCP/Skills** ecosystem so you can connect tools, data sources, and workflows as building blocks. Bring your own MCP servers or Skills to extend what agents can do without reinventing the platform.
+![home](assets/capability.png)
 
-## Product Gallery
+![skills](assets/skills.png)
 
-Demo1: use three prompts to build a classic google game with doubao's head 😂
+**3. 定时任务**
 
-![Demo1](https://github.com/user-attachments/assets/0ef59c4c-8363-44a6-b9ed-7005ccfd71cb)
+![schedule](assets/schedule.png)
 
-Demo2: AskUserTool and file operations
+</details>
 
-![Demo2](https://github.com/user-attachments/assets/98920a1f-fd41-46d4-803d-9c35aaa33b4c)
+<details>
+<summary><strong>点击查看功能演示</strong></summary>
+<br>
 
-Demo3: poco can handle different types of files.
-
-![Demo3](https://github.com/user-attachments/assets/8135dab4-6396-4af8-97af-6f665853fb56)
-
-Demo4: works fine on mobile devices.
-
+**1. 手机端操作演示**
+完美适配移动端，口袋里的 AI Coworker。
 ![Demo4](https://github.com/user-attachments/assets/ccf680bb-358c-4fc9-ad97-50f75b5ea3ac)
 
-## Community
+**2. 写代码与产物预览**
+通过几次对话做一个游戏，右侧直接预览运行结果。
+![Demo1](https://github.com/user-attachments/assets/0ef59c4c-8363-44a6-b9ed-7005ccfd71cb)
 
-Join our WeChat group for updates and discussion:
+**3. 复杂文件处理**
+支持读取和分析各类项目文件。
+![Demo3](https://github.com/user-attachments/assets/8135dab4-6396-4af8-97af-6f665853fb56)
 
-<img src="assets/wx_group.jpg" alt="WeChat Group QR" width="180">
+</details>
 
-## Contributing
+## 快速开始
 
-[![Star History Chart](https://api.star-history.com/svg?repos=poco-ai/poco-agent&type=date&legend=top-left)](https://www.star-history.com/#poco-ai/poco-agent&type=date&legend=top-left)
-
----
-
-## Quickstart (Docker Compose)
-
-Recommended for first-time setup (prepares `.env`, directories, permissions, pulls executor image, and creates the bucket; uses local `rustfs` by default):
+1. 自动安装（推荐）
+   运行脚本，自动检查环境、拉取镜像并生成配置：
 
 ```bash
 ./scripts/quickstart.sh
 ```
 
-After running, edit `.env` and set required values (e.g. `ANTHROPIC_AUTH_TOKEN`), then start services if you used `--no-start`.
+注意：脚本运行完后，请在生成的 .env 文件中填入你的 ANTHROPIC_AUTH_TOKEN。
 
-Manual start:
+2. 启动服务
 
 ```bash
 docker compose up -d
 ```
 
-If you want a lighter setup and use Cloudflare R2 (or any external S3-compatible storage), configure `S3_ENDPOINT` / `S3_ACCESS_KEY` / `S3_SECRET_KEY` / `S3_BUCKET` in `.env` (bucket must already exist), then run:
+3. 访问地址：http://localhost:3000
 
-```bash
-docker compose -f docker-compose.r2.yml up -d
-```
+(可选) 如需使用外部 S3/R2 存储，请使用 docker-compose.r2.yml 启动。
 
-> **Note**: The Executor Manager dynamically creates executor containers. The bootstrap script pulls the executor image by default. If you skip the script, you can pull it manually:
->
-> ```bash
-> docker pull ghcr.io/poco-ai/poco-executor:latest
-> ```
+## 社区
 
-Default URLs:
+扫码加入微信群交流：
 
-- Frontend: `http://localhost:3000`
-- Backend: `http://localhost:8000` (`/docs`)
-- Executor Manager: `http://localhost:8001` (`/docs`)
+<img src="assets/wx_group.jpg" alt="微信群二维码" width="180">
 
-Docs:
+## Star History
 
-- Docker Compose: `docs/en/docker-compose.md`
-- Environment variables: `docs/en/configuration.md`
+[![Star History Chart](https://api.star-history.com/svg?repos=poco-ai/poco-agent&type=date&legend=top-left)](https://www.star-history.com/#poco-ai/poco-agent&type=date&legend=top-left)
