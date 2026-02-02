@@ -59,7 +59,7 @@ jobs:
           tags: |
             type=ref,event=tag,suffix=${{ matrix.tags_suffix || '' }}
             type=sha,suffix=${{ matrix.tags_suffix || '' }}
-            type=raw,value=latest,enable={{is_default_branch}},suffix=${{ matrix.tags_suffix || '' }}
+            type=raw,value=${{ matrix.tags_suffix || 'latest' }},enable={{is_default_branch}}
 
       - name: Build and push
         uses: docker/build-push-action@v6
