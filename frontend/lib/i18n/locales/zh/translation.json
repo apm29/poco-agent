@@ -64,6 +64,9 @@
       "branchLabel": "分支",
       "branchPlaceholder": "例如：main"
     },
+    "browser": {
+      "toggle": "浏览器"
+    },
     "runSchedule": {
       "toggle": "发送时间",
       "dialogTitle": "发送时间",
@@ -187,7 +190,16 @@
     "subagentTranscript": "子代理过程",
     "input": "输入",
     "output": "输出",
-    "scrollToLatestMessage": "跳转到最新消息"
+    "scrollToLatestMessage": "跳转到最新消息",
+    "statusBar": {
+      "browser": "浏览器",
+      "openDesktop": "打开桌面",
+      "desktopPreparing": "桌面链接准备中",
+      "skillsConfigured": "技能配置",
+      "skillsUsed": "技能使用",
+      "mcpConfigured": "MCP 服务器配置",
+      "mcp": "MCP 服务器"
+    }
   },
   "status": {
     "pending": "待处理",
@@ -728,7 +740,8 @@
     "cancel": "取消",
     "create": "创建",
     "delete": "删除",
-    "save": "保存"
+    "save": "保存",
+    "enabled": "已开启"
   },
   "pagination": {
     "previous": "上一页",

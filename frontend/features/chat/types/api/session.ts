@@ -98,6 +98,8 @@ export interface InputFile {
 export interface TaskConfig {
   repo_url?: string | null;
   git_branch?: string; // defaults to "main"
+  /** Built-in browser capability toggle (Playwright MCP is injected internally). */
+  browser_enabled?: boolean;
   /** MCP server enable/disable toggles (true=enabled, false=disabled).
    *  Servers not in this object use their default enabled state from user installations.
    */

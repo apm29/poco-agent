@@ -63,6 +63,9 @@ export function HomePageClient() {
           config.repo_url = repoUrl;
           config.git_branch = gitBranch;
         }
+        if (options?.browser_enabled) {
+          config.browser_enabled = true;
+        }
 
         if (mode === "scheduled") {
           const name =
@@ -153,9 +156,7 @@ export function HomePageClient() {
             onBlur={() => setIsInputFocused(false)}
           />
 
-          <ConnectorsBar
-            forceExpanded={shouldExpandConnectors}
-          />
+          <ConnectorsBar forceExpanded={shouldExpandConnectors} />
         </div>
       </div>
     </div>

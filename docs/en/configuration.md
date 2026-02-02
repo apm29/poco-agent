@@ -55,7 +55,8 @@ Required (otherwise it will not start or cannot dispatch tasks):
 - `BACKEND_URL`: Backend URL, e.g. `http://backend:8000`
 - `INTERNAL_API_TOKEN`: must match Backend `INTERNAL_API_TOKEN`
 - `CALLBACK_BASE_URL`: **must be reachable from executor containers**; Compose default `http://host.docker.internal:8001`
-- `EXECUTOR_IMAGE`: executor image name (manager launches it via Docker API)
+- `EXECUTOR_IMAGE`: executor image name (manager launches it via Docker API). Recommended default: `ghcr.io/poco-ai/poco-executor:lite`
+- `EXECUTOR_BROWSER_IMAGE`: optional, executor image with desktop/browser stack (used when `browser_enabled=true`). Recommended: `ghcr.io/poco-ai/poco-executor:full`
 - `EXECUTOR_PUBLISHED_HOST`: host used to access executor containers mapped to host ports (bare metal: `localhost`; in Compose: `host.docker.internal`)
 - `WORKSPACE_ROOT`: workspace root (**must be a host path**, bind-mounted into executor containers)
 - `S3_ENDPOINT` / `S3_ACCESS_KEY` / `S3_SECRET_KEY` / `S3_BUCKET`: used to export workspaces to object storage

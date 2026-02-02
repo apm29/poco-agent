@@ -64,6 +64,9 @@
       "branchLabel": "Branch",
       "branchPlaceholder": "e.g. main"
     },
+    "browser": {
+      "toggle": "Browser"
+    },
     "runSchedule": {
       "toggle": "Run time",
       "dialogTitle": "Run time",
@@ -187,7 +190,16 @@
     "subagentTranscript": "Subagent transcript",
     "input": "Input",
     "output": "Output",
-    "scrollToLatestMessage": "Jump to latest message"
+    "scrollToLatestMessage": "Jump to latest message",
+    "statusBar": {
+      "browser": "Browser",
+      "openDesktop": "Open desktop",
+      "desktopPreparing": "Preparing desktop link",
+      "skillsConfigured": "Skills (configured)",
+      "skillsUsed": "Skills",
+      "mcpConfigured": "MCP servers (configured)",
+      "mcp": "MCP servers"
+    }
   },
   "status": {
     "pending": "Pending",
@@ -728,7 +740,8 @@
     "cancel": "Cancel",
     "create": "Create",
     "delete": "Delete",
-    "save": "Save"
+    "save": "Save",
+    "enabled": "Enabled"
   },
   "pagination": {
     "previous": "Previous",

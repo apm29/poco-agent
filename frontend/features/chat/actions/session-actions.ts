@@ -17,6 +17,7 @@ const configSchema = z
   .object({
     repo_url: z.string().optional().nullable(),
     git_branch: z.string().optional(),
+    browser_enabled: z.boolean().optional(),
     mcp_config: z.record(z.string(), z.boolean()).optional(),
     skill_files: z.record(z.string(), z.unknown()).optional(),
     input_files: z.array(inputFileSchema).optional(),

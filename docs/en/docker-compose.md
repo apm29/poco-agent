@@ -91,7 +91,9 @@ To pin versions (e.g. `v0.1.0`):
 ```bash
 export BACKEND_IMAGE=ghcr.io/poco-ai/poco-backend:v0.1.0
 export EXECUTOR_MANAGER_IMAGE=ghcr.io/poco-ai/poco-executor-manager:v0.1.0
-export EXECUTOR_IMAGE=ghcr.io/poco-ai/poco-executor:v0.1.0
+export EXECUTOR_IMAGE=ghcr.io/poco-ai/poco-executor:lite
+# Optional: executor image with desktop/browser stack (used when browser_enabled=true)
+# export EXECUTOR_BROWSER_IMAGE=ghcr.io/poco-ai/poco-executor:full
 export FRONTEND_IMAGE=ghcr.io/poco-ai/poco-frontend:v0.1.0
 
 docker compose up -d

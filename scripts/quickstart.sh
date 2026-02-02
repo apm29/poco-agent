@@ -638,15 +638,28 @@ if [[ "$START_ALL" = true ]]; then
   fi
 
   if [[ "$PULL_EXECUTOR" = true ]]; then
-    executor_image="${EXECUTOR_IMAGE:-}"
-    if [[ -z "$executor_image" ]]; then
-      executor_image="$(read_env_key "EXECUTOR_IMAGE" || true)"
+    # Pull both lite and full executor images
+    executor_lite_image="${EXECUTOR_IMAGE:-}"
+    if [[ -z "$executor_lite_image" ]]; then
+      executor_lite_image="$(read_env_key "EXECUTOR_IMAGE" || true)"
     fi
-    if [[ -z "$executor_image" ]]; then
-      executor_image="ghcr.io/poco-ai/poco-executor:latest"
+    if [[ -z "$executor_lite_image" ]]; then
+      executor_lite_image="ghcr.io/poco-ai/poco-executor:lite"
     fi
-    print_info "Pulling executor image: $executor_image"
-    docker pull "$executor_image"
+
+    executor_full_image="${EXECUTOR_BROWSER_IMAGE:-}"
+    if [[ -z "$executor_full_image" ]]; then
+      executor_full_image="$(read_env_key "EXECUTOR_BROWSER_IMAGE" || true)"
+    fi
+    if [[ -z "$executor_full_image" ]]; then
+      executor_full_image="ghcr.io/poco-ai/poco-executor:full"
+    fi
+
+    print_info "Pulling executor images..."
+    print_info "  - $executor_lite_image"
+    docker pull "$executor_lite_image"
+    print_info "  - $executor_full_image"
+    docker pull "$executor_full_image"
   fi
 
   if [[ "$ONLY_RUSTFS" = true ]]; then

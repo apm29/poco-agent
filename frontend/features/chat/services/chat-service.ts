@@ -82,6 +82,10 @@ function parseConfigSnapshot(
           (id): id is number => typeof id === "number",
         )
       : undefined,
+    browser_enabled:
+      typeof configSnapshot.browser_enabled === "boolean"
+        ? configSnapshot.browser_enabled
+        : undefined,
   };
 }
 

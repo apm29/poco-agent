@@ -6,6 +6,7 @@ import {
   Mic,
   Plus,
   GitBranch,
+  Chrome,
   ListTodo,
   SquareTerminal,
   Clock,
@@ -53,6 +54,7 @@ export interface TaskSendOptions {
   attachments?: InputFile[];
   repo_url?: string | null;
   git_branch?: string | null;
+  browser_enabled?: boolean | null;
   run_schedule?: {
     schedule_mode: RunScheduleMode;
     timezone: string;
@@ -98,6 +100,8 @@ export function TaskComposer({
     onChange,
     textareaRef,
   });
+
+  const [browserEnabled, setBrowserEnabled] = React.useState(false);
 
   const [repoDialogOpen, setRepoDialogOpen] = React.useState(false);
   const [repoUrl, setRepoUrl] = React.useState("");
@@ -241,6 +245,7 @@ export function TaskComposer({
       attachments,
       repo_url: repoUrl.trim() || null,
       git_branch: gitBranch.trim() || null,
+      browser_enabled: browserEnabled,
       run_schedule:
         mode === "scheduled"
           ? null
@@ -270,6 +275,7 @@ export function TaskComposer({
     setRunScheduledAt(null);
   }, [
     attachments,
+    browserEnabled,
     gitBranch,
     isSubmitting,
     isUploading,
@@ -670,6 +676,26 @@ export function TaskComposer({
               </TooltipContent>
             </Tooltip>
           ) : null}
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant={browserEnabled ? "secondary" : "ghost"}
+                size="icon"
+                disabled={isSubmitting || isUploading}
+                className="size-9 rounded-xl hover:bg-accent"
+                aria-label={t("hero.browser.toggle")}
+                title={t("hero.browser.toggle")}
+                onClick={() => setBrowserEnabled((prev) => !prev)}
+              >
+                <Chrome className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top" sideOffset={8}>
+              {t("hero.browser.toggle")}
+            </TooltipContent>
+          </Tooltip>
 
           <Tooltip>
             <TooltipTrigger asChild>

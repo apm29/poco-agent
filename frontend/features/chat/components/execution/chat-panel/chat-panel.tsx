@@ -157,11 +157,15 @@ export function ChatPanel({
     session?.config_snapshot &&
     ((session.config_snapshot.mcp_server_ids &&
       session.config_snapshot.mcp_server_ids.length > 0) ||
+      session.config_snapshot.browser_enabled === true ||
       (session.config_snapshot.skill_ids &&
         session.config_snapshot.skill_ids.length > 0));
   const hasSkills =
     statePatch?.skills_used && statePatch.skills_used.length > 0;
   const hasMcp = statePatch?.mcp_status && statePatch.mcp_status.length > 0;
+  const hasBrowser = Boolean(
+    session?.config_snapshot?.browser_enabled || statePatch?.browser?.enabled,
+  );
 
   return (
     <div className="flex flex-col h-full bg-background min-w-0">
@@ -205,11 +209,12 @@ export function ChatPanel({
       </div>
 
       {/* Status Bar - Skills and MCP */}
-      {(hasConfigSnapshot || hasSkills || hasMcp) && (
+      {(hasConfigSnapshot || hasSkills || hasMcp || hasBrowser) && (
         <StatusBar
           configSnapshot={session?.config_snapshot}
           skills={statePatch?.skills_used}
           mcpStatuses={statePatch?.mcp_status}
+          browser={statePatch?.browser}
         />
       )}
 

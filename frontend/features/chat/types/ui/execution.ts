@@ -54,6 +54,7 @@ export interface NewMessage {
 export interface ConfigSnapshot {
   mcp_server_ids?: number[];
   skill_ids?: number[];
+  browser_enabled?: boolean;
 }
 
 /**

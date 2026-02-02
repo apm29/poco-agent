@@ -91,7 +91,9 @@ docker compose up -d
 ```bash
 export BACKEND_IMAGE=ghcr.io/poco-ai/poco-backend:v0.1.0
 export EXECUTOR_MANAGER_IMAGE=ghcr.io/poco-ai/poco-executor-manager:v0.1.0
-export EXECUTOR_IMAGE=ghcr.io/poco-ai/poco-executor:v0.1.0
+export EXECUTOR_IMAGE=ghcr.io/poco-ai/poco-executor:lite
+# 可选：启用可视化浏览器（noVNC + Chrome）的 executor 镜像（用于 browser_enabled=true）
+# export EXECUTOR_BROWSER_IMAGE=ghcr.io/poco-ai/poco-executor:full
 export FRONTEND_IMAGE=ghcr.io/poco-ai/poco-frontend:v0.1.0
 
 docker compose up -d
