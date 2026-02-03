@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import json
+import logging
 import os
 from typing import Any
 
@@ -12,6 +13,7 @@ from app.hooks.base import AgentHook, ExecutionContext
 from app.utils.serializer import serialize_message
 
 POCO_PLAYWRIGHT_MCP_PREFIX = "mcp____poco_playwright__"
+logger = logging.getLogger(__name__)
 
 
 class BrowserScreenshotHook(AgentHook):
@@ -43,7 +45,7 @@ class BrowserScreenshotHook(AgentHook):
         pending = list(self._tasks)
         self._tasks.clear()
         try:
-            done, still_pending = await asyncio.wait(pending, timeout=8.0)
+            done, still_pending = await asyncio.wait(pending, timeout=15.0)
             # Avoid leaking tasks beyond teardown; cancellation is best-effort.
             for task in still_pending:
                 task.cancel()
@@ -84,35 +86,108 @@ class BrowserScreenshotHook(AgentHook):
             if not tool_name or not tool_name.startswith(POCO_PLAYWRIGHT_MCP_PREFIX):
                 continue
 
-            # Avoid capturing screenshots for explicit screenshot tool calls.
-            if tool_name.endswith("screenshot") or "screenshot" in tool_name:
-                continue
-
             if tool_use_id in self._scheduled:
                 continue
             self._scheduled.add(tool_use_id)
 
             task = asyncio.create_task(
-                self._capture_and_upload(
+                self._capture_and_upload_best_effort(
                     session_id=context.session_id,
                     tool_use_id=tool_use_id,
+                    tool_name=tool_name,
+                    tool_result_content=block.get("content"),
                 )
             )
             self._tasks.add(task)
             task.add_done_callback(lambda t: self._tasks.discard(t))
 
-    async def _capture_and_upload(self, *, session_id: str, tool_use_id: str) -> None:
+    async def _capture_and_upload_best_effort(
+        self,
+        *,
+        session_id: str,
+        tool_use_id: str,
+        tool_name: str,
+        tool_result_content: Any,
+    ) -> None:
         try:
-            png_bytes = await self._capture_png()
+            png_bytes = self._extract_png_from_tool_result(tool_result_content)
             if not png_bytes:
+                png_bytes = await self._capture_png_with_retry()
+            if not png_bytes:
+                logger.debug(
+                    "browser_screenshot_capture_skipped",
+                    extra={
+                        "session_id": session_id,
+                        "tool_use_id": tool_use_id,
+                        "tool_name": tool_name,
+                    },
+                )
                 return
-            await self._client.upload_browser_screenshot(
+
+            ok = await self._client.upload_browser_screenshot(
                 session_id=session_id,
                 tool_use_id=tool_use_id,
                 png_bytes=png_bytes,
             )
+            if not ok:
+                logger.warning(
+                    "browser_screenshot_upload_failed",
+                    extra={
+                        "session_id": session_id,
+                        "tool_use_id": tool_use_id,
+                        "tool_name": tool_name,
+                    },
+                )
         except Exception:
             return
+
+    @staticmethod
+    def _extract_png_from_tool_result(tool_result_content: Any) -> bytes | None:
+        """Try to extract PNG bytes from a tool result payload (Playwright MCP screenshot tools)."""
+
+        if not tool_result_content:
+            return None
+
+        # Common shape: [{type: "image", source: {data: "...", media_type: "image/png"}}]
+        content = tool_result_content
+        if isinstance(content, dict):
+            # Some tools may wrap under {"content": [...]}
+            content = content.get("content")
+
+        if not isinstance(content, list):
+            return None
+
+        for item in content:
+            if not isinstance(item, dict):
+                continue
+            if str(item.get("type") or "").lower() != "image":
+                continue
+            source = item.get("source")
+            if not isinstance(source, dict):
+                continue
+            data = source.get("data")
+            if not isinstance(data, str) or not data:
+                continue
+
+            try:
+                return base64.b64decode(data, validate=True)
+            except Exception:
+                return None
+
+        return None
+
+    async def _capture_png_with_retry(self) -> bytes | None:
+        # CDP calls can be flaky on cold starts; retry once with a small delay.
+        for attempt in range(2):
+            png = await self._capture_png()
+            if png:
+                return png
+            if attempt == 0:
+                try:
+                    await asyncio.sleep(0.2)
+                except Exception:
+                    return None
+        return None
 
     async def _capture_png(self) -> bytes | None:
         ws_url = await self._resolve_page_ws_url()
@@ -132,7 +207,7 @@ class BrowserScreenshotHook(AgentHook):
         # Prefer /json/list to get a page target (Page.captureScreenshot works on page sessions).
         url = f"{self._cdp_endpoint}/json/list"
         try:
-            async with httpx.AsyncClient(timeout=2.0) as client:
+            async with httpx.AsyncClient(timeout=5.0) as client:
                 resp = await client.get(url)
                 resp.raise_for_status()
                 targets = resp.json()
@@ -142,6 +217,7 @@ class BrowserScreenshotHook(AgentHook):
         if not isinstance(targets, list):
             return None
 
+        pages: list[dict[str, Any]] = []
         for item in targets:
             if not isinstance(item, dict):
                 continue
@@ -149,12 +225,26 @@ class BrowserScreenshotHook(AgentHook):
                 continue
             ws_url = item.get("webSocketDebuggerUrl")
             if isinstance(ws_url, str) and ws_url.strip():
-                return ws_url.strip()
-        return None
+                pages.append(item)
+
+        if not pages:
+            return None
+
+        def _score(page: dict[str, Any]) -> int:
+            raw_url = str(page.get("url") or "").strip()
+            if not raw_url:
+                return 0
+            if raw_url in {"about:blank", "chrome://newtab/"}:
+                return 0
+            return 1
+
+        pages.sort(key=_score, reverse=True)
+        ws_url = pages[0].get("webSocketDebuggerUrl")
+        return ws_url.strip() if isinstance(ws_url, str) and ws_url.strip() else None
 
     async def _cdp_capture_screenshot(self, ws_url: str) -> str | None:
         try:
-            async with websockets.connect(ws_url, max_size=20 * 1024 * 1024) as ws:
+            async with websockets.connect(ws_url, max_size=50 * 1024 * 1024) as ws:
                 # Ensure Page domain is enabled for consistent screenshots.
                 await ws.send(json.dumps({"id": 1, "method": "Page.enable"}))
                 await ws.send(
@@ -168,12 +258,14 @@ class BrowserScreenshotHook(AgentHook):
                 )
 
                 while True:
-                    raw = await asyncio.wait_for(ws.recv(), timeout=2.5)
+                    raw = await asyncio.wait_for(ws.recv(), timeout=8.0)
                     message = json.loads(raw)
                     if not isinstance(message, dict):
                         continue
                     if message.get("id") != 2:
                         continue
+                    if message.get("error"):
+                        return None
                     result = message.get("result")
                     if not isinstance(result, dict):
                         return None

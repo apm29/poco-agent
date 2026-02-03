@@ -1,3 +1,5 @@
+import logging
+
 import httpx
 
 from app.core.observability.request_context import (
@@ -6,6 +8,8 @@ from app.core.observability.request_context import (
     get_request_id,
     get_trace_id,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class ComputerClient:
@@ -38,6 +42,16 @@ class ComputerClient:
                         "X-Trace-ID": get_trace_id() or generate_trace_id(),
                     },
                 )
+                if not response.is_success:
+                    logger.warning(
+                        "computer_screenshot_upload_failed",
+                        extra={
+                            "session_id": session_id,
+                            "tool_use_id": tool_use_id,
+                            "status_code": response.status_code,
+                            "response_text": response.text[:300],
+                        },
+                    )
                 return response.is_success
         except httpx.RequestError:
             return False
