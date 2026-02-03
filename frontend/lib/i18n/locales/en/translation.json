@@ -411,6 +411,46 @@
         "mcp": "MCP"
       }
     },
+    "personalization": {
+      "card": {
+        "title": "Personalization",
+        "description": "Set persistent preferences and instructions for all your tasks",
+        "feature1": "User-level global scope",
+        "feature2": "Custom instructions",
+        "feature3": "Update anytime, applied on the next run",
+        "action": "Open"
+      },
+      "header": {
+        "title": "Personalization",
+        "refresh": "Refresh",
+        "clear": "Clear",
+        "save": "Save",
+        "saving": "Saving…"
+      },
+      "customInstructions": {
+        "title": "Custom instructions",
+        "description": "These instructions influence how the agent responds and behaves across all future tasks.",
+        "hintScope": "This is global per user: new chats, continued chats, and scheduled tasks will all apply it.",
+        "hintSecrets": "Do not store API keys or other secrets here.",
+        "status": {
+          "enabled": "Enabled",
+          "disabled": "Disabled"
+        },
+        "editor": {
+          "label": "Instruction content",
+          "insertTemplate": "Insert example",
+          "placeholder": "e.g. Always respond in Chinese; keep a professional tone; prefer bullet points…",
+          "tip": "Tip: Turning it off means the instructions are not applied. You can still edit and save for later.",
+          "template": "# Custom Instructions Example\n\n## Output style\n- Always respond in Chinese\n- Prefer clear structure and bullet points\n\n## Coding rules\n- Code comments must be in English\n- Use type annotations for Python (3.12+)\n"
+        }
+      },
+      "toasts": {
+        "saved": "Saved",
+        "cleared": "Cleared",
+        "refreshed": "Refreshed",
+        "error": "Action failed, please retry"
+      }
+    },
     "slashCommands": {
       "card": {
         "title": "Slash Commands",

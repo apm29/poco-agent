@@ -7,6 +7,7 @@ import {
   Server,
   Sparkles,
   Key,
+  FileText,
   Command as CommandIcon,
 } from "lucide-react";
 
@@ -80,6 +81,26 @@ export function CapabilitiesGrid() {
         ],
         actionLabel: t("library.envVars.card.action", "管理变量"),
         actionHref: "/capabilities/env-vars",
+        comingSoon: false,
+      },
+      {
+        id: "personalization",
+        icon: <FileText className="size-6" />,
+        title: t("library.personalization.card.title", "个性化"),
+        description: t(
+          "library.personalization.card.description",
+          "为你的所有任务设置长期生效的偏好与指令",
+        ),
+        features: [
+          t("library.personalization.card.feature1", "用户级全局生效"),
+          t("library.personalization.card.feature2", "自定义指令"),
+          t(
+            "library.personalization.card.feature3",
+            "随时更新，下一次任务生效",
+          ),
+        ],
+        actionLabel: t("library.personalization.card.action", "打开设置"),
+        actionHref: "/capabilities/personalization",
         comingSoon: false,
       },
       {

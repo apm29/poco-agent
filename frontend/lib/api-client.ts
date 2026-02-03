@@ -35,6 +35,9 @@ export const API_ENDPOINTS = {
   // Runs
   runsBySession: (sessionId: string) => `/runs/session/${sessionId}`,
 
+  // User-level persistent custom instructions
+  customInstructions: "/claude-md",
+
   // Attachments
   attachmentsUpload: "/attachments/upload",
 

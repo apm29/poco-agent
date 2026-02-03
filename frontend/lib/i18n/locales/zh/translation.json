@@ -411,6 +411,46 @@
         "mcp": "MCP 变量"
       }
     },
+    "personalization": {
+      "card": {
+        "title": "个性化",
+        "description": "为你的所有任务设置长期生效的偏好与指令",
+        "feature1": "用户级全局生效",
+        "feature2": "自定义指令",
+        "feature3": "随时更新，下一次任务生效",
+        "action": "打开设置"
+      },
+      "header": {
+        "title": "个性化",
+        "refresh": "刷新",
+        "clear": "清空",
+        "save": "保存",
+        "saving": "保存中..."
+      },
+      "customInstructions": {
+        "title": "自定义指令",
+        "description": "这些指令会影响你后续所有任务的回复方式与行为。",
+        "hintScope": "该设置为用户级全局：创建新会话、继续会话、定时任务都会生效。",
+        "hintSecrets": "不要在这里存放 API Key 等敏感信息。",
+        "status": {
+          "enabled": "已启用",
+          "disabled": "未启用"
+        },
+        "editor": {
+          "label": "指令内容",
+          "insertTemplate": "插入示例",
+          "placeholder": "例如：始终用中文回答；保持专业语气；回答要点优先……",
+          "tip": "提示：关闭开关表示不应用该指令；你仍可编辑并保存内容以便之后启用。",
+          "template": "# 自定义指令示例\n\n## 输出风格\n- 始终使用中文回答\n- 结构清晰、要点优先\n\n## 编码规范\n- 代码注释使用英文\n- Python 使用类型标注（3.12+）\n"
+        }
+      },
+      "toasts": {
+        "saved": "已保存",
+        "cleared": "已清空",
+        "refreshed": "已刷新",
+        "error": "操作失败，请稍后重试"
+      }
+    },
     "slashCommands": {
       "card": {
         "title": "Slash Commands",
