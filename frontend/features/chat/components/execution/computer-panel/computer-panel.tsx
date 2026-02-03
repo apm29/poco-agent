@@ -39,6 +39,7 @@ interface ComputerPanelProps {
     | "canceled"
     | "stopped";
   browserEnabled?: boolean;
+  headerAction?: React.ReactNode;
 }
 
 type ReplayFilter = "all" | "browser" | "terminal";
@@ -152,6 +153,7 @@ function clampIndex(value: number, min: number, max: number): number {
 export function ComputerPanel({
   sessionId,
   sessionStatus,
+  headerAction,
 }: ComputerPanelProps) {
   const { t } = useT("translation");
   const isActive = sessionStatus === "running" || sessionStatus === "accepted";
@@ -778,6 +780,7 @@ export function ComputerPanel({
         icon={Monitor}
         title={t("computer.title")}
         description={t("computer.description")}
+        action={headerAction}
       />
       <div className="flex-1 min-h-0 overflow-hidden p-3 sm:p-4">
         <div className="h-full min-h-0 flex flex-col gap-3">

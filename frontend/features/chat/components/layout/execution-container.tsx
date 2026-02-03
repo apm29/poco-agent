@@ -97,6 +97,29 @@ export function ExecutionContainer({ sessionId }: ExecutionContainerProps) {
   }
 
   // Desktop resizable layout
+  const tabsSwitch = (
+    <TabsList>
+      <TabsTrigger value="computer">
+        <Monitor className="size-4" />
+        {t("mobile.computer")}
+        {session?.status ? (
+          <Badge
+            variant={isSessionActive ? "secondary" : "outline"}
+            className="ml-1"
+          >
+            {isSessionActive
+              ? t("computer.status.live")
+              : t("computer.status.replay")}
+          </Badge>
+        ) : null}
+      </TabsTrigger>
+      <TabsTrigger value="artifacts">
+        <Layers className="size-4" />
+        {t("mobile.artifacts")}
+      </TabsTrigger>
+    </TabsList>
+  );
+
   return (
     <div className="flex h-screen overflow-hidden bg-background select-text">
       <ResizablePanelGroup direction="horizontal">
@@ -126,29 +149,6 @@ export function ExecutionContainer({ sessionId }: ExecutionContainerProps) {
               }}
               className="h-full min-h-0 flex flex-col"
             >
-              <div className="px-3 sm:px-4 pt-3 sm:pt-4">
-                <TabsList>
-                  <TabsTrigger value="computer">
-                    <Monitor className="size-4" />
-                    {t("mobile.computer")}
-                    {session?.status ? (
-                      <Badge
-                        variant={isSessionActive ? "secondary" : "outline"}
-                        className="ml-1"
-                      >
-                        {isSessionActive
-                          ? t("computer.status.live")
-                          : t("computer.status.replay")}
-                      </Badge>
-                    ) : null}
-                  </TabsTrigger>
-                  <TabsTrigger value="artifacts">
-                    <Layers className="size-4" />
-                    {t("mobile.artifacts")}
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-
               <div className="flex-1 min-h-0 overflow-hidden">
                 <TabsContent
                   value="computer"
@@ -158,6 +158,7 @@ export function ExecutionContainer({ sessionId }: ExecutionContainerProps) {
                     sessionId={sessionId}
                     sessionStatus={session?.status}
                     browserEnabled={browserEnabled}
+                    headerAction={tabsSwitch}
                   />
                 </TabsContent>
                 <TabsContent
@@ -170,6 +171,7 @@ export function ExecutionContainer({ sessionId }: ExecutionContainerProps) {
                     }
                     sessionId={sessionId}
                     sessionStatus={session?.status}
+                    headerAction={tabsSwitch}
                   />
                 </TabsContent>
               </div>

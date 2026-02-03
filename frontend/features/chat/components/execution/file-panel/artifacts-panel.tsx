@@ -20,6 +20,7 @@ interface ArtifactsPanelProps {
     | "failed"
     | "canceled"
     | "stopped";
+  headerAction?: React.ReactNode;
 }
 
 /**
@@ -45,6 +46,7 @@ export function ArtifactsPanel({
   fileChanges = [],
   sessionId,
   sessionStatus,
+  headerAction,
 }: ArtifactsPanelProps) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
   const {
@@ -134,6 +136,7 @@ export function ArtifactsPanel({
         isSidebarCollapsed={isSidebarCollapsed}
         onToggleSidebar={handleToggleSidebar}
         sessionId={sessionId}
+        headerAction={headerAction}
       />
       <div
         className={cn(

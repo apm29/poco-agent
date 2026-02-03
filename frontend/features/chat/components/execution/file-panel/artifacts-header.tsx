@@ -13,6 +13,7 @@ interface ArtifactsHeaderProps {
   isSidebarCollapsed?: boolean;
   onToggleSidebar?: () => void;
   sessionId?: string;
+  headerAction?: React.ReactNode;
 }
 
 /**
@@ -25,6 +26,7 @@ export function ArtifactsHeader({
   isSidebarCollapsed = false,
   onToggleSidebar,
   sessionId,
+  headerAction,
 }: ArtifactsHeaderProps) {
   const headerTitle = title || selectedFile?.name || "文档预览";
 
@@ -62,29 +64,32 @@ export function ArtifactsHeader({
       description="工作区文件预览"
       className="border-b"
       action={
-        <div className="flex items-center gap-1">
-          {sessionId && (
-            <PanelHeaderAction
-              onClick={handleDownload}
-              aria-label="下载工作区归档"
-            >
-              <Download className="size-4" />
-            </PanelHeaderAction>
-          )}
-          {onToggleSidebar && (
-            <PanelHeaderAction
-              onClick={onToggleSidebar}
-              aria-label={
-                isSidebarCollapsed ? "展开文件侧边栏" : "折叠文件侧边栏"
-              }
-            >
-              {isSidebarCollapsed ? (
-                <ChevronLeft className="size-4" />
-              ) : (
-                <ChevronRight className="size-4" />
-              )}
-            </PanelHeaderAction>
-          )}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            {sessionId && (
+              <PanelHeaderAction
+                onClick={handleDownload}
+                aria-label="下载工作区归档"
+              >
+                <Download className="size-4" />
+              </PanelHeaderAction>
+            )}
+            {onToggleSidebar && (
+              <PanelHeaderAction
+                onClick={onToggleSidebar}
+                aria-label={
+                  isSidebarCollapsed ? "展开文件侧边栏" : "折叠文件侧边栏"
+                }
+              >
+                {isSidebarCollapsed ? (
+                  <ChevronLeft className="size-4" />
+                ) : (
+                  <ChevronRight className="size-4" />
+                )}
+              </PanelHeaderAction>
+            )}
+          </div>
+          {headerAction}
         </div>
       }
     />
