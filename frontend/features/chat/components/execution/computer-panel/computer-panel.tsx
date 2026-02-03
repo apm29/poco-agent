@@ -780,7 +780,11 @@ export function ComputerPanel({
         icon={Monitor}
         title={t("computer.title")}
         description={t("computer.description")}
-        action={headerAction}
+        content={
+          headerAction ? (
+            <div className="flex items-center">{headerAction}</div>
+          ) : undefined
+        }
       />
       <div className="flex-1 min-h-0 overflow-hidden p-3 sm:p-4">
         <div className="h-full min-h-0 flex flex-col gap-3">

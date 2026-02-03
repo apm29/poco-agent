@@ -14,7 +14,7 @@ export interface PanelHeaderProps {
   /**
    * Main title text
    */
-  title: string;
+  title?: string;
   /**
    * Optional description text below the title
    */
@@ -23,6 +23,10 @@ export interface PanelHeaderProps {
    * Optional action button or element to display on the right side
    */
   action?: ReactNode;
+  /**
+   * Optional content to replace the left side (title/icon/description)
+   */
+  content?: ReactNode;
   /**
    * Additional CSS classes for the container
    */
@@ -56,6 +60,7 @@ export function PanelHeader({
   title,
   description,
   action,
+  content,
   className,
   titleClassName,
   showIcon = true,
@@ -70,38 +75,46 @@ export function PanelHeader({
       )}
     >
       <div className="flex items-center gap-3 flex-1 min-w-0 overflow-hidden">
-        {Icon && showIcon && (
-          <div
-            onClick={onIconClick}
-            className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-lg bg-muted shrink-0",
-              iconClassName,
-              onIconClick &&
-                "cursor-pointer hover:bg-muted/80 active:bg-muted/90",
+        {content ? (
+          content
+        ) : (
+          <>
+            {Icon && showIcon && (
+              <div
+                onClick={onIconClick}
+                className={cn(
+                  "flex h-9 w-9 items-center justify-center rounded-lg bg-muted shrink-0",
+                  iconClassName,
+                  onIconClick &&
+                    "cursor-pointer hover:bg-muted/80 active:bg-muted/90",
+                )}
+              >
+                <Icon className="h-5 w-5" />
+              </div>
             )}
-          >
-            <Icon className="h-5 w-5" />
-          </div>
+            <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
+              {title && (
+                <h2
+                  className={cn(
+                    "text-sm font-semibold min-w-0 max-w-full truncate overflow-hidden",
+                    titleClassName,
+                  )}
+                  title={title}
+                >
+                  {title}
+                </h2>
+              )}
+              {description && (
+                <p
+                  className="text-xs text-muted-foreground min-w-0 truncate"
+                  title={description}
+                >
+                  {description}
+                </p>
+              )}
+            </div>
+          </>
         )}
-        <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
-          <h2
-            className={cn(
-              "text-sm font-semibold min-w-0 max-w-full truncate overflow-hidden",
-              titleClassName,
-            )}
-            title={title}
-          >
-            {title}
-          </h2>
-          {description && (
-            <p
-              className="text-xs text-muted-foreground min-w-0 truncate"
-              title={description}
-            >
-              {description}
-            </p>
-          )}
-        </div>
       </div>
       {action && (
         <div className="flex items-center shrink-0 ml-2">{action}</div>
