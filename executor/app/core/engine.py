@@ -29,6 +29,7 @@ from app.core.observability.request_context import (
 )
 from app.schemas.request import TaskConfig
 from app.schemas.state import BrowserState
+from app.utils.browser import format_viewport_size, parse_viewport_size
 
 load_dotenv()
 
@@ -316,6 +317,10 @@ class AgentExecutor:
             or "http://127.0.0.1:9222"
         )
 
+        viewport_raw = (os.environ.get("POCO_BROWSER_VIEWPORT_SIZE") or "").strip()
+        viewport = parse_viewport_size(viewport_raw) or (1366, 768)
+        viewport_size = format_viewport_size(*viewport)
+
         # Wait for Chrome's CDP endpoint before starting the MCP server to avoid flakiness on startup.
         wait_then_start = f"""
 python3 - <<'PY'
@@ -334,7 +339,7 @@ while time.time() < deadline:
 else:
     raise SystemExit("CDP endpoint not ready: " + url)
 PY
-exec npx -y @playwright/mcp@latest --cdp-endpoint {cdp_endpoint!r} --caps vision
+exec npx -y @playwright/mcp@latest --cdp-endpoint {cdp_endpoint!r} --caps vision --viewport-size {viewport_size!r}
 """.strip()
 
         injected = dict(mcp_servers)

@@ -10,6 +10,7 @@ import websockets
 
 from app.core.computer import ComputerClient
 from app.hooks.base import AgentHook, ExecutionContext
+from app.utils.browser import parse_viewport_size
 from app.utils.serializer import serialize_message
 
 POCO_PLAYWRIGHT_MCP_PREFIX = "mcp____poco_playwright__"
@@ -27,12 +28,18 @@ class BrowserScreenshotHook(AgentHook):
         *,
         client: ComputerClient,
         cdp_endpoint: str | None = None,
+        viewport_size: str | None = None,
     ) -> None:
         self._client = client
         self._cdp_endpoint = (
             (cdp_endpoint or os.environ.get("POCO_BROWSER_CDP_ENDPOINT", "")).strip()
             or "http://127.0.0.1:9222"
         ).rstrip("/")
+        viewport_raw = (
+            viewport_size or os.environ.get("POCO_BROWSER_VIEWPORT_SIZE") or ""
+        ).strip()
+        self._viewport = parse_viewport_size(viewport_raw) or (1366, 768)
+        self._viewport_applied: set[str] = set()
         self._tool_name_by_use_id: dict[str, str] = {}
         self._scheduled: set[str] = set()
         self._tasks: set[asyncio.Task[None]] = set()
@@ -190,11 +197,12 @@ class BrowserScreenshotHook(AgentHook):
         return None
 
     async def _capture_png(self) -> bytes | None:
-        ws_url = await self._resolve_page_ws_url()
-        if not ws_url:
+        target = await self._resolve_page_ws_url()
+        if not target:
             return None
+        ws_url, target_id = target
 
-        payload = await self._cdp_capture_screenshot(ws_url)
+        payload = await self._cdp_capture_screenshot(ws_url, target_id)
         if not payload:
             return None
 
@@ -203,7 +211,7 @@ class BrowserScreenshotHook(AgentHook):
         except Exception:
             return None
 
-    async def _resolve_page_ws_url(self) -> str | None:
+    async def _resolve_page_ws_url(self) -> tuple[str, str | None] | None:
         # Prefer /json/list to get a page target (Page.captureScreenshot works on page sessions).
         url = f"{self._cdp_endpoint}/json/list"
         try:
@@ -239,37 +247,110 @@ class BrowserScreenshotHook(AgentHook):
             return 1
 
         pages.sort(key=_score, reverse=True)
-        ws_url = pages[0].get("webSocketDebuggerUrl")
-        return ws_url.strip() if isinstance(ws_url, str) and ws_url.strip() else None
+        picked = pages[0]
+        ws_url = picked.get("webSocketDebuggerUrl")
+        target_id = picked.get("id")
+        ws_url = ws_url.strip() if isinstance(ws_url, str) and ws_url.strip() else None
+        target_id = (
+            target_id.strip()
+            if isinstance(target_id, str) and target_id.strip()
+            else None
+        )
+        if not ws_url:
+            return None
+        return ws_url, target_id
 
-    async def _cdp_capture_screenshot(self, ws_url: str) -> str | None:
+    async def _cdp_call(
+        self,
+        ws: Any,
+        *,
+        call_id: int,
+        method: str,
+        params: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
+        payload: dict[str, Any] = {"id": call_id, "method": method}
+        if params is not None:
+            payload["params"] = params
+        await ws.send(json.dumps(payload))
+
+        while True:
+            raw = await asyncio.wait_for(ws.recv(), timeout=8.0)
+            message = json.loads(raw)
+            if not isinstance(message, dict):
+                continue
+            if message.get("id") != call_id:
+                continue
+            if message.get("error"):
+                return None
+            result = message.get("result")
+            if result is None:
+                return {}
+            return result if isinstance(result, dict) else {}
+
+    async def _cdp_capture_screenshot(
+        self, ws_url: str, target_id: str | None
+    ) -> str | None:
         try:
             async with websockets.connect(ws_url, max_size=50 * 1024 * 1024) as ws:
                 # Ensure Page domain is enabled for consistent screenshots.
-                await ws.send(json.dumps({"id": 1, "method": "Page.enable"}))
-                await ws.send(
-                    json.dumps(
-                        {
-                            "id": 2,
-                            "method": "Page.captureScreenshot",
-                            "params": {"format": "png"},
-                        }
-                    )
-                )
+                await self._cdp_call(ws, call_id=1, method="Page.enable")
 
-                while True:
-                    raw = await asyncio.wait_for(ws.recv(), timeout=8.0)
-                    message = json.loads(raw)
-                    if not isinstance(message, dict):
-                        continue
-                    if message.get("id") != 2:
-                        continue
-                    if message.get("error"):
-                        return None
-                    result = message.get("result")
-                    if not isinstance(result, dict):
-                        return None
-                    data = result.get("data")
-                    return data if isinstance(data, str) and data else None
+                # Best-effort: lock viewport to a desktop size so responsive pages don't render
+                # as mobile when the underlying display/window is small.
+                apply_key = target_id or ws_url
+                if apply_key not in self._viewport_applied:
+                    width, height = self._viewport
+                    _ = await self._cdp_call(
+                        ws,
+                        call_id=2,
+                        method="Emulation.setDeviceMetricsOverride",
+                        params={
+                            "width": width,
+                            "height": height,
+                            "deviceScaleFactor": 1,
+                            "mobile": False,
+                        },
+                    )
+
+                    # If the browser is headful, also try to resize the window for noVNC.
+                    if target_id:
+                        win = await self._cdp_call(
+                            ws,
+                            call_id=3,
+                            method="Browser.getWindowForTarget",
+                            params={"targetId": target_id},
+                        )
+                        window_id = (
+                            int(win["windowId"])
+                            if isinstance(win, dict)
+                            and isinstance(win.get("windowId"), int)
+                            else None
+                        )
+                        if window_id is not None:
+                            _ = await self._cdp_call(
+                                ws,
+                                call_id=4,
+                                method="Browser.setWindowBounds",
+                                params={
+                                    "windowId": window_id,
+                                    "bounds": {
+                                        "width": width,
+                                        "height": height,
+                                    },
+                                },
+                            )
+
+                    self._viewport_applied.add(apply_key)
+
+                result = await self._cdp_call(
+                    ws,
+                    call_id=5,
+                    method="Page.captureScreenshot",
+                    params={"format": "png"},
+                )
+                if not isinstance(result, dict):
+                    return None
+                data = result.get("data")
+                return data if isinstance(data, str) and data else None
         except Exception:
             return None
