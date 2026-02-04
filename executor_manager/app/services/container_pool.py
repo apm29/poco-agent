@@ -480,7 +480,7 @@ class ContainerPool:
                         "session_id": session_id,
                         "container_id": logical_id or container_id,
                         "docker_id": container.id,
-                        "name": container.name,
+                        "container_name": container.name,
                     },
                 )
             except docker.errors.NotFound:
@@ -493,7 +493,7 @@ class ContainerPool:
                         "session_id": session_id,
                         "container_id": logical_id or container_id,
                         "docker_id": getattr(container, "id", None),
-                        "name": getattr(container, "name", None),
+                        "container_name": getattr(container, "name", None),
                         "error": str(e),
                     },
                 )
