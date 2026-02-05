@@ -160,3 +160,15 @@ export async function deleteSessionAction(input: DeleteSessionInput) {
   const { sessionId } = deleteSessionSchema.parse(input);
   await chatService.deleteSession(sessionId);
 }
+
+const renameSessionTitleSchema = z.object({
+  sessionId: z.string().trim().min(1, "缺少会话 ID"),
+  title: z.string().trim().min(1, "请输入会话名称").max(255, "会话名称过长"),
+});
+
+export type RenameSessionTitleInput = z.infer<typeof renameSessionTitleSchema>;
+
+export async function renameSessionTitleAction(input: RenameSessionTitleInput) {
+  const { sessionId, title } = renameSessionTitleSchema.parse(input);
+  return chatService.updateSession(sessionId, { title });
+}

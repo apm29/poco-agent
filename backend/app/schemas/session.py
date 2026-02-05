@@ -37,6 +37,7 @@ class SessionUpdateRequest(BaseModel):
 
     status: str | None = None
     sdk_session_id: str | None = None
+    title: str | None = None
     workspace_archive_url: str | None = None
     project_id: UUID | None = None
     state_patch: dict[str, Any] | None = None

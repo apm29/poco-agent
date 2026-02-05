@@ -11,6 +11,7 @@ export interface SessionCreateRequest {
 export interface SessionUpdateRequest {
   status?: string | null;
   sdk_session_id?: string | null;
+  title?: string | null;
   workspace_archive_url?: string | null;
   state_patch?: ApiStatePatch | null;
   workspace_files_prefix?: string | null;

@@ -46,7 +46,7 @@ interface CollapsibleProjectItemProps {
   onToggle: () => void;
   onProjectClick: () => void;
   onDeleteTask: (taskId: string) => Promise<void> | void;
-  onRenameTask?: (taskId: string, newName: string) => void;
+  onRenameTask?: (taskId: string, newName: string) => Promise<void> | void;
   onMoveTaskToProject?: (taskId: string, projectId: string | null) => void;
   allProjects: ProjectItem[];
   onRenameProject?: (projectId: string, newName: string) => void;

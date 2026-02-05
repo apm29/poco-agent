@@ -87,7 +87,7 @@ function DroppableAllTasksGroup({
   title: string;
   tasks: TaskHistoryItem[];
   onDeleteTask: (taskId: string) => Promise<void> | void;
-  onRenameTask?: (taskId: string, newName: string) => void;
+  onRenameTask?: (taskId: string, newName: string) => Promise<void> | void;
   onMoveTaskToProject?: (taskId: string, projectId: string | null) => void;
   projects: ProjectItem[];
   isSelectionMode?: boolean;
@@ -174,7 +174,7 @@ export function MainSidebar({
   taskHistory: TaskHistoryItem[];
   onNewTask: () => void;
   onDeleteTask: (taskId: string) => Promise<void> | void;
-  onRenameTask?: (taskId: string, newName: string) => void;
+  onRenameTask?: (taskId: string, newName: string) => Promise<void> | void;
   onMoveTaskToProject?: (taskId: string, projectId: string | null) => void;
   onRenameProject?: (projectId: string, newName: string) => void;
   onDeleteProject?: (projectId: string) => Promise<void> | void;
@@ -470,7 +470,7 @@ export function MainSidebar({
                       return "";
                   }
                 };
-                
+
                 return (
                   <SidebarMenu
                     key={id}
@@ -493,7 +493,9 @@ export function MainSidebar({
                           isDisabled ? `${t(labelKey)} (暂不可用)` : t(labelKey)
                         }
                       >
-                        <Icon className={cn("size-4 shrink-0", getIconAnimation())} />
+                        <Icon
+                          className={cn("size-4 shrink-0", getIconAnimation())}
+                        />
                         <span className="text-sm truncate group-data-[collapsible=icon]:hidden">
                           {t(labelKey)}
                         </span>
@@ -552,9 +554,7 @@ export function MainSidebar({
                           tasks={tasksByProject.get(project.id) || []}
                           isExpanded={expandedProjects.has(project.id)}
                           onToggle={() => toggleProjectExpanded(project.id)}
-                          onProjectClick={() =>
-                            handleProjectClick(project.id)
-                          }
+                          onProjectClick={() => handleProjectClick(project.id)}
                           onDeleteTask={onDeleteTask}
                           onRenameTask={onRenameTask}
                           onMoveTaskToProject={onMoveTaskToProject}
@@ -565,9 +565,7 @@ export function MainSidebar({
                           selectedTaskIds={selectedTaskIds}
                           selectedProjectIds={selectedProjectIds}
                           onToggleTaskSelection={handleToggleTaskSelection}
-                          onEnableSelectionMode={
-                            handleEnableTaskSelectionMode
-                          }
+                          onEnableSelectionMode={handleEnableTaskSelectionMode}
                           onToggleProjectSelection={
                             handleToggleProjectSelection
                           }

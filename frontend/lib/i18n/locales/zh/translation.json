@@ -828,6 +828,15 @@
       }
     }
   },
+  "task": {
+    "renameDescription": "请输入新的任务名称",
+    "nameLabel": "任务名称",
+    "namePlaceholder": "请输入任务名称",
+    "toasts": {
+      "renamed": "已重命名任务",
+      "renameFailed": "重命名失败"
+    }
+  },
   "project": {
     "subtitle": "{{count}} 个任务",
     "share": "分享项目",
@@ -858,6 +867,7 @@
     "create": "创建",
     "delete": "删除",
     "save": "保存",
+    "confirm": "确定",
     "enabled": "已开启"
   },
   "pagination": {

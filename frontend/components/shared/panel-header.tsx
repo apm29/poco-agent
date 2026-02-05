@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Slot } from "@radix-ui/react-slot";
 import type { LucideIcon } from "lucide-react";
@@ -22,11 +22,11 @@ export interface PanelHeaderProps {
   /**
    * Optional action button or element to display on the right side
    */
-  action?: ReactNode;
+  action?: React.ReactNode;
   /**
    * Optional content to replace the left side (title/icon/description)
    */
-  content?: ReactNode;
+  content?: React.ReactNode;
   /**
    * Additional CSS classes for the container
    */
@@ -126,12 +126,9 @@ export function PanelHeader({
 /**
  * PanelHeaderAction Props
  */
-export interface PanelHeaderActionProps {
-  children: ReactNode;
+export interface PanelHeaderActionProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  children: React.ReactNode;
   asChild?: boolean;
-  className?: string;
-  onClick?: () => void;
-  disabled?: boolean;
 }
 
 /**
@@ -144,13 +141,14 @@ export function PanelHeaderAction({
   children,
   asChild = false,
   className,
-  onClick,
   disabled = false,
+  ...props
 }: PanelHeaderActionProps) {
   const Comp = asChild ? Slot : "button";
 
   return (
     <Comp
+      {...props}
       className={cn(
         "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -160,7 +158,6 @@ export function PanelHeaderAction({
         "h-8 w-8 p-0",
         className,
       )}
-      onClick={onClick}
       disabled={disabled}
     >
       {children}
@@ -172,7 +169,7 @@ export function PanelHeaderAction({
  * PanelHeaderButton Props
  */
 export interface PanelHeaderButtonProps {
-  children: ReactNode;
+  children: React.ReactNode;
   variant?: "default" | "ghost";
   size?: "default" | "sm" | "icon";
   className?: string;

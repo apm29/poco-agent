@@ -81,6 +81,23 @@ class SessionService:
                     )
                 db_session.project_id = project_id
 
+        if "title" in request.model_fields_set:
+            if request.title is None:
+                db_session.title = None
+            else:
+                title = request.title.strip()
+                if not title:
+                    raise AppException(
+                        error_code=ErrorCode.BAD_REQUEST,
+                        message="Title cannot be empty",
+                    )
+                if len(title) > 255:
+                    raise AppException(
+                        error_code=ErrorCode.BAD_REQUEST,
+                        message="Title exceeds maximum length (255)",
+                    )
+                db_session.title = title
+
         if request.status is not None:
             db_session.status = request.status
         if request.sdk_session_id is not None:

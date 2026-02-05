@@ -828,6 +828,15 @@
       }
     }
   },
+  "task": {
+    "renameDescription": "Enter a new task name",
+    "nameLabel": "Task name",
+    "namePlaceholder": "Enter task name",
+    "toasts": {
+      "renamed": "Task renamed",
+      "renameFailed": "Failed to rename task"
+    }
+  },
   "project": {
     "subtitle": "{{count}} tasks",
     "share": "Share Project",
@@ -858,6 +867,7 @@
     "create": "Create",
     "delete": "Delete",
     "save": "Save",
+    "confirm": "Confirm",
     "enabled": "Enabled"
   },
   "pagination": {

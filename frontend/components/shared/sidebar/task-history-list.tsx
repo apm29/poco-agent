@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import {
   MoreHorizontal,
   FolderPlus,
+  Pencil,
   Trash2,
   GripVertical,
   Loader2,
@@ -40,6 +41,7 @@ interface DraggableTaskProps {
   task: TaskHistoryItem;
   lng?: string;
   onDeleteTask: (taskId: string) => Promise<void> | void;
+  onRenameClick?: (task: TaskHistoryItem) => void;
   onMoveClick: (task: TaskHistoryItem) => void;
   isSelectionMode?: boolean;
   isSelected?: boolean;
@@ -54,6 +56,7 @@ function DraggableTask({
   task,
   lng,
   onDeleteTask,
+  onRenameClick,
   onMoveClick,
   isSelectionMode,
   isSelected,
@@ -220,6 +223,17 @@ function DraggableTask({
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" side="right">
+            {onRenameClick && (
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRenameClick(task);
+                }}
+              >
+                <Pencil className="size-4" />
+                <span>{t("sidebar.rename")}</span>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
@@ -258,7 +272,7 @@ export function TaskHistoryList({
 }: {
   tasks: TaskHistoryItem[];
   onDeleteTask: (taskId: string) => Promise<void> | void;
-  onRenameTask?: (taskId: string, newName: string) => void;
+  onRenameTask?: (taskId: string, newName: string) => Promise<void> | void;
   onMoveTaskToProject?: (taskId: string, projectId: string | null) => void;
   projects?: Project[];
   isSelectionMode?: boolean;
@@ -279,8 +293,7 @@ export function TaskHistoryList({
   const [selectedTask, setSelectedTask] =
     React.useState<TaskHistoryItem | null>(null);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _handleRenameClick = (task: TaskHistoryItem) => {
+  const handleRenameClick = (task: TaskHistoryItem) => {
     setSelectedTask(task);
     setRenameDialogOpen(true);
   };
@@ -311,6 +324,7 @@ export function TaskHistoryList({
             task={task}
             lng={lng}
             onDeleteTask={onDeleteTask}
+            onRenameClick={onRenameTask ? handleRenameClick : undefined}
             onMoveClick={handleMoveClick}
             isSelectionMode={isSelectionMode}
             isSelected={selectedTaskIds.has(task.id)}

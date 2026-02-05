@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { MessageSquare, Loader2 } from "lucide-react";
+import { MessageSquare, Loader2, Pencil } from "lucide-react";
 import { ChatMessageList } from "../../chat/chat-message-list";
 import { TodoList } from "./todo-list";
 import { StatusBar } from "./status-bar";
@@ -9,17 +9,26 @@ import { PendingMessageList } from "./pending-message-list";
 import { ChatInput, type ChatInputRef } from "./chat-input";
 import { UserInputRequestCard } from "./user-input-request-card";
 import { PlanApprovalCard } from "./plan-approval-card";
-import { PanelHeader } from "@/components/shared/panel-header";
+import {
+  PanelHeader,
+  PanelHeaderAction,
+} from "@/components/shared/panel-header";
 import { useChatMessages } from "./hooks/use-chat-messages";
 import { usePendingMessages } from "./hooks/use-pending-messages";
 import { useUserInputRequests } from "./hooks/use-user-input-requests";
-import { cancelSessionAction } from "@/features/chat/actions/session-actions";
+import {
+  cancelSessionAction,
+  renameSessionTitleAction,
+} from "@/features/chat/actions/session-actions";
+import { RenameTaskDialog } from "@/features/projects/components/rename-task-dialog";
 import type {
   ExecutionSession,
   StatePatch,
   InputFile,
 } from "@/features/chat/types";
 import { useT } from "@/lib/i18n/client";
+import { toast } from "sonner";
+import { useTaskHistoryContext } from "@/features/projects/contexts/task-history-context";
 
 interface ChatPanelProps {
   session: ExecutionSession | null;
@@ -54,7 +63,9 @@ export function ChatPanel({
   onIconClick,
 }: ChatPanelProps) {
   const { t } = useT("translation");
+  const { refreshTasks } = useTaskHistoryContext();
   const [isCancelling, setIsCancelling] = React.useState(false);
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = React.useState(false);
   const inputRef = React.useRef<ChatInputRef>(null);
 
   // Message management hook
@@ -118,6 +129,25 @@ export function ChatPanel({
     updateSession,
   ]);
 
+  const handleRename = React.useCallback(
+    async (newTitle: string) => {
+      if (!session?.session_id) return;
+      try {
+        await renameSessionTitleAction({
+          sessionId: session.session_id,
+          title: newTitle,
+        });
+        updateSession({ title: newTitle });
+        toast.success(t("task.toasts.renamed"));
+        await refreshTasks();
+      } catch (error) {
+        console.error("[ChatPanel] Failed to rename session title:", error);
+        toast.error(t("task.toasts.renameFailed"));
+      }
+    },
+    [refreshTasks, session?.session_id, t, updateSession],
+  );
+
   // Handle edit message - load content into input
   const handleEditMessage = React.useCallback((content: string) => {
     inputRef.current?.setValueAndFocus(content);
@@ -172,6 +202,16 @@ export function ChatPanel({
         }
         description={session?.title || t("chat.emptyStateDesc")}
         onIconClick={onIconClick}
+        action={
+          session?.session_id ? (
+            <PanelHeaderAction
+              onClick={() => setIsRenameDialogOpen(true)}
+              title={t("sidebar.rename")}
+            >
+              <Pencil className="size-4" />
+            </PanelHeaderAction>
+          ) : null
+        }
       />
 
       {/* Top Section: Todo List (full width) */}
@@ -255,6 +295,13 @@ export function ChatPanel({
         canCancel={isSessionCancelable || isCancelling}
         isCancelling={isCancelling}
         disabled={!session?.session_id || !!activeUserInput || isCancelling}
+      />
+
+      <RenameTaskDialog
+        open={isRenameDialogOpen}
+        onOpenChange={setIsRenameDialogOpen}
+        taskName={session?.title || ""}
+        onRename={handleRename}
       />
     </div>
   );
